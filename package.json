@@ -1,0 +1,24 @@
+{
+  "name": "crypto-lab-search-vault",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Searchable symmetric encryption in the browser — encrypted keyword search and the leakage-abuse attacks the access pattern enables.",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test:a11y": "playwright test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^26.1.2",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7",
+    "vitest": "^3.2.6"
+  }
+}

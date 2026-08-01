@@ -1,0 +1,659 @@
+/* crypto-lab-search-vault — dark default, light via html[data-theme="light"].
+   Contrast targets: body text >= 4.5:1, large text & UI components >= 3:1,
+   muted text lowers LIGHTNESS (never opacity). State is never colour alone:
+   every verdict renders icon + text + colour. Colour tracks SYSTEM INTEGRITY,
+   not the raw return value — a search that returns the right documents while
+   handing the server a reconstructable access pattern reads as EXPOSED, not
+   as green success. */
+
+:root {
+  --accent: #14b8a6;
+  --bg: #0a1413;
+  --surface: #0f1e1c;
+  --surface-2: #162926;
+  --border: #274541;
+  --text: #e6f4f1;
+  --text-dim: #9fbdb7;
+  --accent-text: #5eead4;
+  --ok-text: #7ee3a8;
+  --alarm-text: #ff9d85;
+  --warn-text: #f2c14e;
+  --ink-on-accent: #06231f;
+  --client-tint: #5eead4;
+  --server-tint: #f2c14e;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 6l5 5 5-5' fill='none' stroke='%239fbdb7' stroke-width='2'/%3E%3C/svg%3E");
+}
+
+html[data-theme='light'] {
+  --bg: #f2f8f7;
+  --surface: #ffffff;
+  --surface-2: #e6efee;
+  --border: #b6cdc9;
+  --text: #10211f;
+  --text-dim: #3d5754;
+  --accent-text: #0b6157;
+  --ok-text: #0f6a3c;
+  --alarm-text: #a32f16;
+  --warn-text: #7a5300;
+  --client-tint: #0b6157;
+  --server-tint: #7a5300;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 6l5 5 5-5' fill='none' stroke='%233d5754' stroke-width='2'/%3E%3C/svg%3E");
+}
+
+html {
+  background-color: #0a1413;
+  color-scheme: dark;
+}
+html[data-theme='light'] {
+  background-color: #f2f8f7;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.55;
+}
+
+#app {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 3vw, 2rem);
+}
+
+/* Element defaults are scoped to #app so they never fight the always-dark,
+   self-contained shared top bar. */
+#app p {
+  margin: 0.6rem 0;
+}
+#app h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+#app h3 {
+  margin: 1.1rem 0 0.4rem;
+  font-size: 1.02rem;
+}
+#app h4 {
+  margin: 0.6rem 0 0.2rem;
+  font-size: 0.92rem;
+}
+#app a {
+  color: var(--accent-text);
+  text-decoration: underline;
+}
+#app a:hover {
+  text-decoration-thickness: 2px;
+}
+#app code,
+#app .mono {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 0.92em;
+}
+#app :focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* BEGIN cl-hero standard — managed, keep in sync across fleet */
+.cl-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:clamp(1rem,4vw,3rem);flex-wrap:wrap;margin:clamp(1rem,3vw,2rem) 0 1.5rem;}
+.cl-hero-main{flex:1 1 22rem;min-width:min(100%,20rem);}
+.cl-hero-title{margin:0;font-size:clamp(1.6rem,3.8vw,2.7rem);font-weight:700;line-height:1.1;letter-spacing:.01em;}
+.cl-hero-sub{margin:.4rem 0 0;font-size:clamp(.9rem,1.6vw,1.05rem);letter-spacing:.01em;opacity:.85;}
+.cl-hero-desc{margin:.55rem 0 0;font-size:1rem;line-height:1.5;color:var(--text-dim);max-width:60ch;}
+.cl-hero-why{flex:0 1 min(40%,26rem);min-width:min(100%,15rem);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.05rem;background:color-mix(in oklab,var(--accent) 6%,transparent);}
+.cl-hero-why-label{display:block;font-size:.68rem;font-weight:700;letter-spacing:.14em;}
+.cl-hero-why-text{margin:.35rem 0 0;font-size:.95rem;line-height:1.5;}
+@media (max-width:640px){.cl-hero{flex-direction:column;}.cl-hero-why{flex-basis:auto;width:100%;}}
+/* END cl-hero standard */
+
+/* The block above is the managed fleet standard and stays byte-identical. Below
+   640px it switches to a column, where the 22rem flex-basis can leave the title
+   block wider than its container and give the page a horizontal scrollbar.
+   Clamped here rather than by editing the managed rules. */
+@media (max-width: 640px) {
+  #app .cl-hero-main,
+  #app .cl-hero-why {
+    max-width: 100%;
+  }
+}
+
+/* ---- Panels ---- */
+#exhibits {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  padding-bottom: 2.5rem;
+}
+
+.panel {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem 1.35rem;
+}
+
+.panel-num {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--accent-text);
+  margin-bottom: 0.15rem;
+}
+
+.panel-lede {
+  color: var(--text-dim);
+  max-width: 78ch;
+}
+
+.note {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  max-width: 82ch;
+}
+
+.honesty {
+  border-left: 3px solid var(--accent-text);
+  padding-left: 0.8rem;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin: 0.9rem 0 0;
+}
+
+.intro-panel {
+  border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
+}
+
+.jargon {
+  border-bottom: 1px dotted var(--accent-text);
+  cursor: help;
+}
+
+/* ---- Controls ---- */
+#app button {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background-color: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+}
+#app button:hover:not(:disabled) {
+  border-color: var(--accent-text);
+}
+#app button:disabled {
+  cursor: not-allowed;
+  color: var(--text-dim);
+  border-style: dashed;
+}
+#app button.primary {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-on-accent);
+  font-weight: 600;
+}
+#app button.primary:disabled {
+  background-color: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+
+#app select,
+#app input[type='text'] {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.4rem 2rem 0.4rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background-color: var(--surface-2);
+  color: var(--text);
+}
+#app select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: var(--chevron);
+  background-repeat: no-repeat;
+  background-position: right 0.55rem center;
+  background-size: 1rem;
+}
+#app input[type='text'] {
+  padding-right: 0.6rem;
+}
+#app input[type='range'] {
+  accent-color: var(--accent);
+  width: min(100%, 16rem);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.9rem 0 0.2rem;
+}
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.control-group label {
+  font-size: 0.86rem;
+  color: var(--text-dim);
+}
+
+/* ---- Client / server split ---- */
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+@media (max-width: 780px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.side {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.85rem 0.95rem 1rem;
+  background-color: var(--surface-2);
+}
+.side-client {
+  border-left: 3px solid var(--client-tint);
+}
+.side-server {
+  border-left: 3px solid var(--server-tint);
+}
+.side-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0 0 0.5rem;
+}
+.side-client .side-title {
+  color: var(--client-tint);
+}
+.side-server .side-title {
+  color: var(--server-tint);
+}
+.side-note {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin: 0.5rem 0 0;
+}
+
+/* ---- Value rows (the real bytes) ---- */
+.value-row {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.value-row:last-child {
+  border-bottom: 0;
+}
+.value-label {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  letter-spacing: 0.03em;
+}
+.value-bytes {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  word-break: break-all;
+  color: var(--text);
+}
+.value-bytes.is-token {
+  color: var(--accent-text);
+}
+.value-row.is-pending .value-bytes {
+  color: var(--text-dim);
+}
+@media (max-width: 560px) {
+  .value-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.step-arrow {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  margin: 0.35rem 0 0.1rem;
+}
+
+/* ---- Scrollable tables ---- */
+.scroll-region {
+  max-height: 22rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 0.6rem;
+  background-color: var(--surface);
+}
+.scroll-region:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 1px;
+}
+
+table.data {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.82rem;
+}
+table.data caption {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+}
+table.data th,
+table.data td {
+  text-align: left;
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+table.data thead th {
+  position: sticky;
+  top: 0;
+  background-color: var(--surface-2);
+  color: var(--text-dim);
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  z-index: 1;
+}
+table.data td.mono,
+table.data th.mono {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  word-break: break-all;
+}
+table.data tbody tr.is-new {
+  background-color: color-mix(in oklab, var(--accent) 18%, transparent);
+}
+
+/* ---- Badges & verdicts (icon + text + colour, never colour alone) ---- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.badge-ok {
+  color: var(--ok-text);
+}
+.badge-alarm {
+  color: var(--alarm-text);
+}
+.badge-warn {
+  color: var(--warn-text);
+}
+.badge-info {
+  color: var(--accent-text);
+}
+
+.verdict {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid currentColor;
+  font-size: 0.92rem;
+}
+.verdict .verdict-icon {
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+.verdict-body {
+  color: var(--text);
+}
+.verdict-title {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.verdict-exposed {
+  color: var(--alarm-text);
+  background-color: color-mix(in oklab, var(--alarm-text) 8%, transparent);
+}
+.verdict-ok {
+  color: var(--ok-text);
+  background-color: color-mix(in oklab, var(--ok-text) 8%, transparent);
+}
+.verdict-info {
+  color: var(--accent-text);
+  background-color: color-mix(in oklab, var(--accent) 8%, transparent);
+}
+.verdict-warn {
+  color: var(--warn-text);
+  background-color: color-mix(in oklab, var(--warn-text) 8%, transparent);
+}
+
+/* ---- Histogram ---- */
+.histogram {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.histogram li {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(4rem, 1fr) 8.5rem;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.82rem;
+}
+.bar-track {
+  display: block;
+  background-color: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  height: 0.8rem;
+  overflow: hidden;
+}
+.bar-fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background-color: var(--accent);
+}
+.bar-value {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+@media (max-width: 560px) {
+  .histogram li {
+    grid-template-columns: 5rem 1fr;
+  }
+  .bar-value {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}
+
+/* ---- Matrix heatmap ---- */
+table.matrix {
+  border-collapse: collapse;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+table.matrix th,
+table.matrix td {
+  border: 1px solid var(--border);
+  padding: 0.25rem 0.35rem;
+  text-align: center;
+  min-width: 2.6rem;
+}
+table.matrix th {
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+table.matrix th[scope='row'] {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background-color: var(--surface);
+}
+table.matrix td {
+  color: var(--text);
+}
+
+/* ---- Graph ---- */
+.graph-wrap {
+  margin-top: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background-color: var(--surface-2);
+  padding: 0.5rem;
+}
+.graph-wrap svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.graph-edge {
+  stroke: var(--accent-text);
+}
+.graph-node {
+  fill: var(--surface);
+  stroke: var(--accent-text);
+  stroke-width: 1.5;
+}
+.graph-label {
+  fill: var(--text);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 9px;
+  text-anchor: middle;
+}
+
+/* ---- Challenge grid ---- */
+.challenge-row td {
+  vertical-align: middle;
+}
+.challenge-score {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  margin-top: 0.8rem;
+}
+.score-block {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  background-color: var(--surface-2);
+  min-width: 11rem;
+}
+.score-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.score-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+/* ---- Comparison ---- */
+.compare-real {
+  color: var(--ok-text);
+}
+.compare-cited {
+  color: var(--text-dim);
+}
+
+/* ---- Non-goals ---- */
+.nongoals {
+  margin: 0.6rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+.nongoals li {
+  margin: 0.3rem 0;
+}
+
+/* ---- Footer ---- */
+.scripture-footer {
+  border-top: 1px solid var(--border);
+  margin-top: 2.5rem;
+  padding: 1.1rem clamp(1rem, 3vw, 2rem) 1.6rem;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  text-align: center;
+}
+.scripture-footer a {
+  color: var(--accent-text);
+  text-decoration: underline;
+}
+.scripture-footer p {
+  margin: 0.35rem 0;
+}
+
+details {
+  margin-top: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--surface-2);
+}
+details > summary {
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--accent-text);
+}
+details[open] > summary {
+  margin-bottom: 0.5rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
