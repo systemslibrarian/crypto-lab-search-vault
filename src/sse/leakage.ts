@@ -40,6 +40,20 @@ export function tokenProfiles(observations: QueryObservation[]): TokenProfile[] 
 }
 
 /**
+ * Keep only tokens whose observed volume occurs in the adversary's candidate
+ * vocabulary. A zero-result query is visibly outside this demo's vocabulary
+ * because every candidate has at least one result; forcing it into the IKK
+ * assignment would invent a candidate and can make T exceed C.
+ */
+export function profilesMatchingCandidateVolumes(
+  profiles: TokenProfile[],
+  candidateCounts: readonly number[],
+): TokenProfile[] {
+  const possibleVolumes = new Set(candidateCounts);
+  return profiles.filter((profile) => possibleVolumes.has(profile.resultSize));
+}
+
+/**
  * Observed co-occurrence: M[i][j] = |R_i ∩ R_j| / N, the fraction of the
  * database that answers both token i and token j. This matrix is the whole
  * input to the Islam–Kuzu–Kantarcioglu attack, and the server assembles it

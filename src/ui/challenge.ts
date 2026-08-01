@@ -10,6 +10,7 @@ import {
   knownCooccurrence,
   knownCounts,
   observedCooccurrence,
+  profilesMatchingCandidateVolumes,
   tokenLabel,
   tokenProfiles,
   type TokenProfile,
@@ -56,7 +57,10 @@ export function renderChallenge(): HTMLElement {
   const guesses = new Map<string, string>();
 
   function profiles(): TokenProfile[] {
-    return tokenProfiles(getState().server.observations());
+    return profilesMatchingCandidateVolumes(
+      tokenProfiles(getState().server.observations()),
+      knownCounts(KEYWORDS, CORPUS),
+    );
   }
 
   function renderBoard(): void {

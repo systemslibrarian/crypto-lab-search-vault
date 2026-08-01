@@ -121,3 +121,20 @@ test('no WCAG A/AA violations — light theme, empty and miss states', async ({ 
   await driveEdges(page);
   await scan(page);
 });
+
+test('an out-of-corpus query does not break the leakage attack', async ({ page }) => {
+  await page.goto('.');
+  await page.locator('#search-input').fill('unicorn');
+  await page.locator('#search-run').click();
+  await expect(page.getByText('NO MATCH')).toBeVisible();
+  await page.locator('#search-run-all').click();
+
+  await page.locator('#attack-run').click();
+  await expect(page.locator('#attack-result table')).toBeVisible();
+  await expect(page.locator('#attack-result')).toContainText(
+    'It excluded 1 zero-result token because no candidate keyword has zero results.',
+  );
+
+  await page.locator('#challenge-machine').click();
+  await expect(page.getByText('THE PATTERN WAS THE SECRET')).toBeVisible();
+});

@@ -10,6 +10,7 @@ import {
   observedCooccurrence,
   tokenLabel,
   tokenProfiles,
+  profilesMatchingCandidateVolumes,
   touchedDocuments,
 } from './leakage';
 import type { VaultKeys } from './types';
@@ -55,6 +56,24 @@ describe('token profiles', () => {
 
   it('labels a token from its bytes alone', () => {
     expect(tokenLabel('abcdef0123456789')).toBe('t·abcdef');
+  });
+
+  it('excludes an observed volume that no candidate keyword can produce', () => {
+    const profiles = tokenProfiles(server.observations());
+    const unknown = {
+      tokenHex: 'ff'.repeat(32),
+      queryCount: 1,
+      resultSize: 0,
+      resultIds: [],
+      firstSeenSeq: profiles.length,
+    };
+    const compatible = profilesMatchingCandidateVolumes(
+      [...profiles, unknown],
+      knownCounts(KEYWORDS, CORPUS),
+    );
+
+    expect(compatible).toHaveLength(KEYWORDS.length);
+    expect(compatible).not.toContain(unknown);
   });
 });
 

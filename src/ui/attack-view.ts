@@ -11,6 +11,7 @@ import {
   knownCooccurrence,
   knownCounts,
   observedCooccurrence,
+  profilesMatchingCandidateVolumes,
   tokenLabel,
   tokenProfiles,
 } from '../sse/leakage';
@@ -162,7 +163,10 @@ export function renderAttack(): HTMLElement {
   function run(): void {
     clear(result);
     const { server, truth } = getState();
-    const profiles = tokenProfiles(server.observations());
+    const allProfiles = tokenProfiles(server.observations());
+    const counts = knownCounts(KEYWORDS, CORPUS);
+    const profiles = profilesMatchingCandidateVolumes(allProfiles, counts);
+    const excluded = allProfiles.length - profiles.length;
 
     if (profiles.length < 2) {
       result.append(
@@ -183,7 +187,7 @@ export function renderAttack(): HTMLElement {
         candidates: KEYWORDS,
         observed: observedCooccurrence(profiles, CORPUS.length),
         known: knownCooccurrence(KEYWORDS, CORPUS),
-        counts: knownCounts(KEYWORDS, CORPUS),
+        counts,
         totalDocs: CORPUS.length,
       },
       { ...DEFAULT_ATTACK, noise: noiseLevel() },
@@ -200,7 +204,10 @@ export function renderAttack(): HTMLElement {
         pct >= 50 ? '⚠' : pct > 0 ? '👁' : '✓',
         `${score.correct} OF ${score.total} QUERIES RECONSTRUCTED (${pct}%)`,
         `${attack.pinnedByCount} identified by result size alone; the rest by matching co-occurrence, in ${elapsed.toFixed(0)} ms. ` +
-          `The adversary started from ${profiles.length} opaque tokens and a public statistic.`,
+          `The adversary started from ${profiles.length} candidate-compatible opaque tokens and a public statistic.` +
+          (excluded > 0
+            ? ` It excluded ${excluded} zero-result token${excluded === 1 ? '' : 's'} because no candidate keyword has zero results.`
+            : ''),
       ),
     );
 
