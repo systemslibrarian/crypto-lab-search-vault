@@ -12,6 +12,7 @@
   --surface: #0f1e1c;
   --surface-2: #162926;
   --border: #274541;
+  --control-border: #63847f;
   --text: #e6f4f1;
   --text-dim: #9fbdb7;
   --accent-text: #5eead4;
@@ -29,6 +30,7 @@ html[data-theme='light'] {
   --surface: #ffffff;
   --surface-2: #e6efee;
   --border: #b6cdc9;
+  --control-border: #718a85;
   --text: #10211f;
   --text-dim: #3d5754;
   --accent-text: #0b6157;
@@ -226,7 +228,7 @@ body {
   font-size: 0.9rem;
   padding: 0.4rem 2rem 0.4rem 0.6rem;
   border-radius: 8px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--control-border);
   background-color: var(--surface-2);
   color: var(--text);
 }
