@@ -19,6 +19,8 @@ import { DEFAULT_ATTACK, recoveryRate, runAttack, type AttackResult } from '../s
 import { badge, clear, el, labelled, panel, scrollRegion, verdict } from './dom';
 import { getState, onChange, runRealisticRound } from './state';
 
+const PROMPT = 'Press “Run the attack” once the server has watched a few queries.';
+
 export function renderAttack(): HTMLElement {
   const { section, body } = panel(
     'EXHIBIT 4',
@@ -270,6 +272,22 @@ export function renderAttack(): HTMLElement {
     );
   }
 
+  /**
+   * The result is a verdict about one specific ledger. Clearing the server's
+   * log takes that ledger away, and leaving "14 OF 14 QUERIES RECONSTRUCTED"
+   * on screen next to an input panel that has gone back to empty states
+   * something the page can no longer compute. Drop back to the prompt.
+   */
+  function dropStaleResult(): void {
+    const profiles = profilesMatchingCandidateVolumes(
+      tokenProfiles(getState().server.observations()),
+      knownCounts(KEYWORDS, CORPUS),
+    );
+    if (profiles.length >= 2) return;
+    clear(result);
+    result.append(el('p', { class: 'note', text: PROMPT }));
+  }
+
   noise.addEventListener('input', () => {
     const v = Number(noise.value);
     noiseOut.textContent = v === 0 ? 'exact' : `±${v}%`;
@@ -279,13 +297,11 @@ export function renderAttack(): HTMLElement {
     void runRealisticRound().then(run);
   });
 
-  onChange(renderInput);
+  onChange(() => {
+    renderInput();
+    dropStaleResult();
+  });
   renderInput();
-  result.append(
-    el('p', {
-      class: 'note',
-      text: 'Press “Run the attack” once the server has watched a few queries.',
-    }),
-  );
+  result.append(el('p', { class: 'note', text: PROMPT }));
   return section;
 }

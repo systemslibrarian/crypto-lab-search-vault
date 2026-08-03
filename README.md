@@ -101,9 +101,10 @@ npm run dev          # http://localhost:5173
 npm test             # unit tests, including the spec KATs
 npm run build        # typecheck + production build
 npm run test:a11y    # axe-core WCAG 2.1 AA gate against the production build
+npm run test:e2e     # the same Playwright run, including the functional claims suite
 ```
 
-`npm run test:a11y` starts `vite preview` on port **4237** automatically, so what is scanned is what ships.
+Both Playwright scripts build first and start `vite preview` on port **4237** automatically, so what is scanned and driven is what ships.
 
 ---
 
@@ -128,6 +129,8 @@ npm run test:a11y    # axe-core WCAG 2.1 AA gate against the production build
 | `src/core/aead.test.ts` | 2 × AES-256-GCM from the GCM specification's vector set (test cases 13 and 14), checked in both directions |
 
 Beyond the KATs, the suite covers: index construction (one posting per keyword–document pair, distinct pseudorandom addresses, no two identical ciphertexts); search correctness for every keyword in the corpus; the miss path for unindexed keywords and random tokens; six fail-closed cases (flipped ciphertext, tampered IV, wrong key, truncated blob, relocated posting, forged posting); what the server's ledger does and does not record; the leakage computations — including a proof-shaped check that the observed co-occurrence matrix is *identical* to the plaintext one, and a colour-refinement check that no two keywords in the corpus are information-theoretically interchangeable; and the attacks — full recovery with exact background knowledge, graceful degradation under noise, determinism under a fixed seed, and refusal on malformed input.
+
+**Functional browser gate:** `e2e/claims.spec.ts` drives the production build and asserts the numbers each exhibit puts on screen — against each other, not against constants. The 14 per-keyword row counts must sum to the store's own total; the search verdict's document set must be the set the client decrypted, the set the server says it sent, and the set in the ledger row; the exposure percentage must be the touched/total the summary itself reports, and the histogram's per-token query counts must partition the query total; the attack's headline must be the tally of its own per-token table, with the count-attack figure matching the rows it labelled; the challenge score must equal the rows it marked recovered; and the measured latency must be the measured total over the measured run count. Every failure path is asserted to reach its state *and* name its cause — the miss path, the empty query, the attack with nothing to attack, the board with nothing to work with. Uncaught page exceptions fail the run.
 
 **Accessibility gate:** `@axe-core/playwright` scans the production build for WCAG 2.1 A/AA violations in **both themes**, across four scans — every exhibit driven to its post-interaction state, and the empty/miss states that are the other branch of each conditional render. Zero violations required; a regression blocks the deploy.
 

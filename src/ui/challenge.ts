@@ -222,7 +222,13 @@ export function renderChallenge(): HTMLElement {
     renderBoard();
   });
 
-  onChange(renderBoard);
+  onChange(() => {
+    renderBoard();
+    // The scoreboard scores one specific log. If that log is cleared the board
+    // falls back to "nothing to work with yet", and a surviving "IKK ATTACK
+    // 14 / 14" beside it contradicts the page's own state.
+    if (profiles().length < 2) clear(outcome);
+  });
   renderBoard();
   return section;
 }
