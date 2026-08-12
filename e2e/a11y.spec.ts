@@ -1,140 +1,58 @@
-import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
-
-const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
-
-async function settle(page: Page): Promise<void> {
-  await page.addStyleTag({
-    content: `*,*::before,*::after{animation:none!important;transition:none!important}`,
-  });
-  await page.evaluate(() => {
-    document.querySelectorAll('details').forEach((d) => ((d as HTMLDetailsElement).open = true));
-  });
-}
+import { expect, test } from '@playwright/test';
+import {
+  boot,
+  driveAllStates,
+  expectBaselineNotStale,
+  NARROW,
+  reportCollected,
+  watchPageErrors,
+} from './gate';
 
 /**
- * Drive every exhibit into its richest post-interaction state. Axe only checks
- * what is in the DOM, so each dynamic region — the stepper's final verdict, the
- * populated ledger, the three leakage charts, the attack's per-token table with
- * both "recovered" and "held" badges, the challenge scoreboard, and the timing
- * readout — has to be on screen before the scan.
+ * WCAG A/AA regression gate.
+ *
+ * The lab is driven along everything it teaches: the arrival state, where nine
+ * regions are empty prompts and two controls ship disabled; the skip link
+ * focused; the intro glossary opened through its summary; the index build
+ * STEPPED, so the pending value rows and the accent-tinted row landing in the
+ * server's store are both measured, then completed to the INDEXED verdict, then
+ * reset by changing keyword; all three search outcomes — answered-and-observed,
+ * no-match, and the empty query; the whole keyword set queried once, then a
+ * skewed realistic round; the three leakage views including the SVG overlap
+ * graph and both heatmaps; the attack run with exact background knowledge and
+ * again with it degraded to 150% error, which is the only route to "held" rows
+ * beside "recovered" ones; the challenge board guessed, checked, machine-scored
+ * and cleared; 50 real searches timed; and finally the teardown cascade, where
+ * clearing the server's log re-renders four other exhibits back to their
+ * prompts. Every one of those states is scanned, in both themes, at desktop and
+ * phone width.
+ *
+ * See `gate.ts` for why nothing is injected into the page, why no `<details>` is
+ * opened from script, why the theme is seeded rather than toggled, why the lab's
+ * defaults are asserted rather than assumed, and why `violations` is not the
+ * whole oracle — including what `border-contrast.spec.ts` was actually
+ * measuring.
  */
-async function driveMain(page: Page): Promise<void> {
-  // Exhibit 1 — step partway, then finish the build.
-  await page.locator('#build-keyword').selectOption('contract');
-  await page.locator('#build-step').click();
-  await page.locator('#build-step').click();
-  await page.locator('#build-all').click();
-  await expect(page.getByText('INDEXED', { exact: true })).toBeVisible();
 
-  // Exhibit 2 — one real search, then a full round so the ledger fills.
-  await page.locator('#search-input').fill('breach');
-  await page.locator('#search-run').click();
-  await expect(page.getByText('ANSWERED — AND OBSERVED')).toBeVisible();
-  await page.locator('#search-run-all').click();
+for (const theme of ['dark', 'light'] as const) {
+  test(`no WCAG A/AA violations in ${theme} theme`, async ({ page }) => {
+    test.setTimeout(900_000);
+    const errors = watchPageErrors(page);
+    await boot(page, theme);
+    await driveAllStates(page, theme);
+    expect(errors, errors.join('\n')).toEqual([]);
+    expectBaselineNotStale();
+    reportCollected();
+  });
 
-  // Exhibit 3 — the three leakage views.
-  await page.locator('#leak-run-all').click();
-  await expect(page.getByRole('heading', { name: 'Query frequency — the search pattern' })).toBeVisible();
-  await expect(page.locator('.graph-wrap svg')).toBeVisible();
-
-  // Exhibit 4 — degrade the adversary's knowledge so the results table shows
-  // both a recovered token and a token that held.
-  await page.locator('#attack-noise').fill('60');
-  await page.locator('#attack-run').click();
-  await expect(page.locator('#attack-result table')).toBeVisible();
-
-  // Exhibit 5 — answer some tokens, score them, then run the machine.
-  await page.locator('#challenge-observe').click();
-  const guesses = page.locator('#challenge-board select');
-  await guesses.nth(0).selectOption('audit');
-  await guesses.nth(1).selectOption('salary');
-  await page.locator('#challenge-check').click();
-  await expect(page.getByText(/YOU RECOVERED \d+ OF \d+/)).toBeVisible();
-  await page.locator('#challenge-machine').click();
-  await expect(page.getByText('THE PATTERN WAS THE SECRET')).toBeVisible();
-
-  // Exhibit 6 — the measured latency readout.
-  await page.locator('#compare-measure').click();
-  await expect(page.getByText(/MS PER SEARCH/)).toBeVisible();
-
-  await settle(page);
+  test(`no WCAG A/AA violations in ${theme} theme at 380px`, async ({ page }) => {
+    test.setTimeout(900_000);
+    const errors = watchPageErrors(page);
+    await page.setViewportSize(NARROW);
+    await boot(page, theme);
+    await driveAllStates(page, `${theme} @380px`);
+    expect(errors, errors.join('\n')).toEqual([]);
+    expectBaselineNotStale();
+    reportCollected();
+  });
 }
-
-/**
- * The other branch of every conditional render: the empty states and the
- * miss path. These are separate DOM, so they need their own scan.
- */
-async function driveEdges(page: Page): Promise<void> {
-  await page.locator('#search-input').fill('unicorn');
-  await page.locator('#search-run').click();
-  await expect(page.getByText('NO MATCH')).toBeVisible();
-
-  await page.locator('#search-clear').click();
-  await expect(page.getByText('No queries observed yet.')).toBeVisible();
-  await expect(page.getByText('NOT ENOUGH OBSERVED YET')).toBeVisible();
-
-  await page.locator('#attack-run').click();
-  await expect(page.getByText('NOTHING TO ATTACK YET')).toBeVisible();
-
-  await settle(page);
-}
-
-async function scan(page: Page): Promise<void> {
-  const { violations } = await new AxeBuilder({ page }).withTags(TAGS).analyze();
-  expect(
-    violations.map((v) => ({
-      id: v.id,
-      impact: v.impact,
-      nodes: v.nodes.map((n) => n.target.join(' ')).slice(0, 5),
-    })),
-  ).toEqual([]);
-}
-
-async function toLight(page: Page): Promise<void> {
-  await page.locator('#cl-theme-toggle').click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-}
-
-test('no WCAG A/AA violations — dark theme, every exhibit driven', async ({ page }) => {
-  await page.goto('.');
-  await driveMain(page);
-  await scan(page);
-});
-
-test('no WCAG A/AA violations — light theme, every exhibit driven', async ({ page }) => {
-  await page.goto('.');
-  await toLight(page);
-  await driveMain(page);
-  await scan(page);
-});
-
-test('no WCAG A/AA violations — dark theme, empty and miss states', async ({ page }) => {
-  await page.goto('.');
-  await driveEdges(page);
-  await scan(page);
-});
-
-test('no WCAG A/AA violations — light theme, empty and miss states', async ({ page }) => {
-  await page.goto('.');
-  await toLight(page);
-  await driveEdges(page);
-  await scan(page);
-});
-
-test('an out-of-corpus query does not break the leakage attack', async ({ page }) => {
-  await page.goto('.');
-  await page.locator('#search-input').fill('unicorn');
-  await page.locator('#search-run').click();
-  await expect(page.getByText('NO MATCH')).toBeVisible();
-  await page.locator('#search-run-all').click();
-
-  await page.locator('#attack-run').click();
-  await expect(page.locator('#attack-result table')).toBeVisible();
-  await expect(page.locator('#attack-result')).toContainText(
-    'It excluded 1 zero-result token because no candidate keyword has zero results.',
-  );
-
-  await page.locator('#challenge-machine').click();
-  await expect(page.getByText('THE PATTERN WAS THE SECRET')).toBeVisible();
-});

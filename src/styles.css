@@ -19,6 +19,15 @@
   --ok-text: #7ee3a8;
   --alarm-text: #ff9d85;
   --warn-text: #f2c14e;
+  /* The SOLID fill of a primary button, separate from --accent because the two
+     have different jobs and different floors. --accent is a tint source: it is
+     mixed at 6-35% into panel washes, table rows and heatmap cells, and it is
+     also what the always-dark shared top bar reads for its own ink and borders.
+     --accent-solid is painted at full strength against a page surface, so it
+     alone has to clear 3:1 there (SC 1.4.11) while carrying --ink-on-accent at
+     4.5:1 (SC 1.4.3). In the dark theme one value satisfies both; in the light
+     theme it does not, which is why they part company below. */
+  --accent-solid: #14b8a6;
   --ink-on-accent: #06231f;
   --client-tint: #5eead4;
   --server-tint: #f2c14e;
@@ -37,6 +46,19 @@ html[data-theme='light'] {
   --ok-text: #0f6a3c;
   --alarm-text: #a32f16;
   --warn-text: #7a5300;
+  /* The light theme never got its own solid accent. #14b8a6 is a mid teal: it
+     reads clearly against the dark theme's near-black panels, and measured
+     2.49:1 against this theme's #ffffff panel — every primary button on the
+     page dissolving into the card behind it (SC 1.4.11 wants 3:1). #0f766e is
+     the same hue two steps down: 5.47:1 on --surface and 4.68:1 on --surface-2.
+     --accent itself is deliberately left at #14b8a6, because it is also read by
+     the always-dark shared top bar (`--cl-ink`, `.cl-badge`, `.cl-btn`), where
+     darkening it would move the bar's own edge from 2.09:1 to 1.48:1 — a fix
+     for one theme paid for out of a component this repo does not own. */
+  --accent-solid: #0f766e;
+  /* White, not the dark-theme #06231f: on #0f766e that ink measures 3.06:1,
+     under the 4.5:1 body-text floor. White is 5.47:1. */
+  --ink-on-accent: #ffffff;
   --client-tint: #0b6157;
   --server-tint: #7a5300;
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 6l5 5 5-5' fill='none' stroke='%233d5754' stroke-width='2'/%3E%3C/svg%3E");
@@ -192,7 +214,19 @@ body {
   font-size: 0.9rem;
   padding: 0.45rem 0.9rem;
   border-radius: 8px;
-  border: 1px solid var(--border);
+  /* --control-border, not --border. This is the same token the fields two rules
+     down already use, and for the same reason: the fill is --surface-2, which
+     sits 1.13:1 from the --surface panel behind it, so the 1px border is the
+     ONLY thing that delineates the control. --border is a surface divider —
+     panel outlines, table rules, the footer hairline, fifteen uses — and with it
+     every non-primary button on this page measured 1.46:1 in dark and 1.43:1 in
+     light. --control-border measures 3.73:1 against the fill and 4.20:1 against
+     the panel in dark; 3.16:1 and 3.70:1 in light.
+
+     `border-contrast.spec.ts` did not catch this because it queried
+     `#app select, #app input[type='text']` — precisely the two selectors the
+     correct token was already applied to. */
+  border: 1px solid var(--control-border);
   background-color: var(--surface-2);
   color: var(--text);
   cursor: pointer;
@@ -211,8 +245,8 @@ body {
   border-style: dashed;
 }
 #app button.primary {
-  background-color: var(--accent);
-  border-color: var(--accent);
+  background-color: var(--accent-solid);
+  border-color: var(--accent-solid);
   color: var(--ink-on-accent);
   font-weight: 600;
 }
