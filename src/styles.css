@@ -345,6 +345,17 @@ body {
   color: var(--text-dim);
   margin: 0.5rem 0 0;
 }
+/*
+ * `.badge` is `white-space: nowrap` so a two-word pill never splits in half.
+ * The one badge carrying a whole sentence — Exhibit 2's "every posting
+ * authenticated under AES-GCM" — is the exception: nowrap makes its min-content
+ * the entire string, and that becomes the automatic minimum of the `1fr`
+ * `.split` track holding it, so the DOCUMENT scrolls sideways at 380px
+ * (WCAG 1.4.10). A sentence is allowed to wrap; the pill keeps its shape.
+ */
+.side-note .badge {
+  white-space: normal;
+}
 
 /* ---- Value rows (the real bytes) ---- */
 .value-row {
