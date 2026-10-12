@@ -28,7 +28,7 @@ export function renderScope(): HTMLElement {
       { class: 'nongoals' },
       el('li', {}, `The corpus is ${CORPUS.length} short documents and ${KEYWORDS.length} keywords so the attack finishes while you watch. Real leakage-abuse studies run over tens of thousands of documents and thousands of keywords.`),
       el('li', {}, 'The client and the server are two objects in one page. There is no network, so nothing here measures network-level leakage — and a real deployment leaks timing and message sizes too.'),
-      el('li', {}, 'The adversary’s “background knowledge” is derived from this same corpus. Setting the error slider above zero is the honest setting; zero is the strongest possible assumption.'),
+      el('li', {}, 'Exact-statistics mode is a favorable attacker control derived from the target. Its slider adds synthetic jitter, not realistic error. Other modes use independently sampled modeled corpora; they are educational sensitivity experiments.'),
     ),
 
     el('h3', { text: 'What this does NOT prove' }),

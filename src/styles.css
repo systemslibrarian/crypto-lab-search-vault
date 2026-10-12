@@ -713,3 +713,7 @@ details[open] > summary {
     transition: none !important;
   }
 }
+
+/* Long auxiliary-model names must fit the control area on narrow screens. */
+.control-group { min-width: 0; max-width: 100%; }
+#app .control-group select { min-width: 0; max-width: 100%; width: 100%; }

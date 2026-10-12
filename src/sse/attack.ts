@@ -19,7 +19,7 @@
 import type { TokenProfile } from './leakage';
 
 export interface AttackConfig {
-  /** 0 = the adversary's background statistics are exact; 1 = badly wrong. */
+  /** Synthetic multiplicative jitter amplitude, not a calibrated empirical error rate. */
   noise: number;
   seed: number;
   restarts: number;
@@ -232,7 +232,7 @@ function seedAssignment(
 }
 
 /** Symmetric multiplicative noise — the adversary's statistics are close to,
- *  but not exactly, the target's. Clamped to a valid frequency. */
+ *  but not exactly, the target's. Clamped to [0, 1]; it need not correspond to any jointly realizable document corpus. */
 function perturbMatrix(m: number[][], noise: number, rng: () => number): number[][] {
   if (noise <= 0) return m.map((row) => row.slice());
   const n = m.length;

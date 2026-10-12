@@ -1,3 +1,4 @@
+import { auxiliaryCorpus, auxiliaryStatistics, matrixDistance, type AuxiliaryMode } from '../sse/auxiliary';
 /**
  * Exhibit 4 — the leakage-abuse attack, run for real against this vault.
  *
@@ -71,12 +72,19 @@ export function renderAttack(): HTMLElement {
   const controls = el(
     'div',
     { class: 'controls' },
-    labelled('Adversary’s background knowledge error', noise),
+    labelled('Synthetic statistic jitter (not calibrated to real error)', noise),
     noiseOut,
     runBtn,
     observeBtn,
   );
 
+  const auxiliaryMode = el('select', { id: 'attack-auxiliary' },
+    el('option', { value: 'exact' }, 'Exact target statistics + optional synthetic jitter'),
+    el('option', { value: 'independent' }, 'Independent modeled corpus — 64 documents'),
+    el('option', { value: 'small' }, 'Same auxiliary model, smaller sample — 12 documents'),
+    el('option', { value: 'shifted' }, 'Distribution-shifted modeled corpus — 64 documents'),
+  ) as HTMLSelectElement;
+  controls.prepend(labelled('Attacker auxiliary data', auxiliaryMode));
   const inputView = el('div', { id: 'attack-input' });
   const result = el('div', {
     id: 'attack-result',
@@ -91,7 +99,7 @@ export function renderAttack(): HTMLElement {
       'p',
       { class: 'honesty' },
       'Honest about the assumption: the adversary needs statistics from a similar corpus. At 0% error it has this corpus’s exact ' +
-        'statistics, which is the strongest possible assumption and not realistic — drag the slider right to degrade it and watch ' +
+        'statistics, a favorable attacker control. The slider adds arbitrary matrix/count jitter, not an empirical error percentage. Independent corpus modes sample a separate declared teaching model; they do not replicate the paper or establish a deployment error scale. Changing the inputs can change ' +
         'recovery fall. IKK’s actual finding was that partial, imperfect knowledge is already enough to recover most queries.',
     ),
     el(
@@ -166,8 +174,13 @@ export function renderAttack(): HTMLElement {
     clear(result);
     const { server, truth } = getState();
     const allProfiles = tokenProfiles(server.observations());
-    const counts = knownCounts(KEYWORDS, CORPUS);
-    const profiles = profilesMatchingCandidateVolumes(allProfiles, counts);
+    const mode = auxiliaryMode.value;
+    const aux = auxiliaryStatistics(KEYWORDS, mode === 'exact' ? CORPUS : auxiliaryCorpus(mode as AuxiliaryMode));
+    // Estimate target-size counts from the same sample that produced the matrix.
+    const counts = aux.counts.map(c => Math.round(c / aux.sampleSize * CORPUS.length));
+    // Auxiliary sample mismatch is not proof an observed token is impossible.
+    const profiles = mode === 'exact' ? profilesMatchingCandidateVolumes(allProfiles, counts)
+      : allProfiles.filter(p => p.resultSize > 0);
     const excluded = allProfiles.length - profiles.length;
 
     if (profiles.length < 2) {
@@ -188,15 +201,27 @@ export function renderAttack(): HTMLElement {
         profiles,
         candidates: KEYWORDS,
         observed: observedCooccurrence(profiles, CORPUS.length),
-        known: knownCooccurrence(KEYWORDS, CORPUS),
+        known: aux.matrix,
         counts,
         totalDocs: CORPUS.length,
       },
-      { ...DEFAULT_ATTACK, noise: noiseLevel() },
+      { ...DEFAULT_ATTACK, noise: mode === 'exact' ? noiseLevel() : 0 },
     );
     const elapsed = performance.now() - started;
     const score = recoveryRate(attack.recoveries, truth);
     const pct = Math.round(score.rate * 100);
+    const seeds = [DEFAULT_ATTACK.seed, 7, 99];
+    const rates = [score.rate, ...seeds.slice(1).map(seed => recoveryRate(runAttack({
+      profiles, candidates: KEYWORDS, observed: observedCooccurrence(profiles, CORPUS.length),
+      known: aux.matrix, counts, totalDocs: CORPUS.length,
+    }, { ...DEFAULT_ATTACK, seed, noise: mode === 'exact' ? noiseLevel() : 0 }).recoveries, truth).rate)];
+    const mean = rates.reduce((sum, rate) => sum + rate, 0) / rates.length;
+    const distance = matrixDistance(aux.matrix, knownCooccurrence(KEYWORDS, CORPUS));
+    result.append(el('p', { class: 'note', id: 'auxiliary-summary' },
+      `Auxiliary sample: ${aux.sampleSize} documents. Evaluation-only matrix RMSE (before optional jitter): ${distance.toFixed(4)}. ` +
+      `Actual recovery across seeds ${seeds.join(', ')}: ${rates.map(r => (r * 100).toFixed(1) + '%').join(', ')}; mean ${(mean * 100).toFixed(1)}%, range ${(Math.min(...rates) * 100).toFixed(1)}–${(Math.max(...rates) * 100).toFixed(1)}%. ` +
+      'Ground truth is used only to evaluate committed guesses. Corpus/model similarity and these toy outcomes are not universal SSE security bounds.'));
+
 
     // Colour tracks system integrity: a successful recovery is an ALARM for
     // the scheme, however impressive it is as an attack.
@@ -288,9 +313,15 @@ export function renderAttack(): HTMLElement {
     result.append(el('p', { class: 'note', text: PROMPT }));
   }
 
+  auxiliaryMode.addEventListener('change', () => {
+    noise.disabled = auxiliaryMode.value !== 'exact';
+    clear(result);
+    result.append(el('p', { class: 'note', text: PROMPT }));
+  });
   noise.addEventListener('input', () => {
     const v = Number(noise.value);
-    noiseOut.textContent = v === 0 ? 'exact' : `±${v}%`;
+    noiseOut.textContent = v === 0 ? 'exact' : `±${v}% synthetic jitter`;
+    clear(result); result.append(el('p', { class: 'note', text: PROMPT }));
   });
   runBtn.addEventListener('click', run);
   observeBtn.addEventListener('click', () => {

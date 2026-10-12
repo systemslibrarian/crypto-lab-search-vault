@@ -394,7 +394,7 @@ test('exhibit 4: degrading the adversary’s background knowledge degrades recov
 
   await page.locator('#attack-noise').fill('150');
   await page.locator('#attack-noise').dispatchEvent('input');
-  await expect(page.locator('#attack-noise-value')).toHaveText('±150%');
+  await expect(page.locator('#attack-noise-value')).toHaveText('±150% synthetic jitter');
   await page.locator('#attack-run').click();
   await expect(page.locator('#attack-result table')).toBeVisible();
   const noisy = await readAttack(page);
@@ -569,4 +569,19 @@ test('exhibit 6: the per-search figure is the measured total over the measured r
     `The server’s log — ${before + runs} queries observed`,
   );
   await expect(page.locator('#search-ledger tbody tr')).toHaveCount(before + runs);
+});
+
+test('auxiliary modes expose sample size and seeded variation without retaining stale recovery', async ({ page }) => {
+  await page.goto('.');
+  await page.locator('#attack-observe').click();
+  await expect(page.locator('#attack-result table')).toBeVisible();
+  await page.locator('#attack-auxiliary').selectOption('small');
+  await expect(page.locator('#attack-result table')).toHaveCount(0);
+  await expect(page.locator('#attack-noise')).toBeDisabled();
+  await page.locator('#attack-run').click();
+  await expect(page.locator('#auxiliary-summary')).toContainText('Auxiliary sample: 12 documents');
+  await expect(page.locator('#auxiliary-summary')).toContainText('Actual recovery across seeds');
+  await page.locator('#attack-auxiliary').selectOption('shifted');
+  await page.locator('#attack-run').click();
+  await expect(page.locator('#auxiliary-summary')).toContainText('Auxiliary sample: 64 documents');
 });

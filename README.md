@@ -76,10 +76,10 @@ You can: step the index build for any of the 14 keywords; search real and non-ex
 
 ## What Can Go Wrong
 
-- **Access-pattern leakage is not a footnote.** With exact background statistics, the attack in Exhibit 4 recovers all 14 queries in tens of milliseconds. Even with the adversary's statistics degraded well past realistic error, most tokens still fall.
+- **Access-pattern leakage is not a footnote.** With exact background statistics, the attack in Exhibit 4 recovers all 14 queries in tens of milliseconds. The jitter slider is a synthetic sensitivity control; no value is calibrated to realistic attacker error.
 - **Volume leakage is enough on its own.** Any keyword whose document count is unique in the vocabulary is identified by result size, with no co-occurrence analysis at all. Padding result sets is the standard countermeasure, and it costs storage and bandwidth.
 - **Deterministic tokens link queries over time.** The server cannot read a token, but it recognises every repeat, so it can build a per-user query-frequency profile and line it up against public word-frequency data.
-- **The background-knowledge assumption is weaker than it sounds.** The adversary needs statistics for a *similar* corpus, not yours — leaked archives, public filings, and comparable organisations all supply them.
+- **Background similarity is an assumption to evaluate.** The adversary needs statistics for a *similar* corpus, not yours — leaked archives, public filings, and comparable organisations all supply them.
 - **A static index hides an ongoing hazard.** This demo builds the index once. Adding documents later leaks whether a new document matches an earlier query unless the scheme is explicitly forward-private.
 - **Tampering fails closed, and that is deliberate.** Each posting is sealed with its own address as associated data, so a server that relocates, forges or flips a row causes the whole result to be rejected rather than silently mis-answered. Six tests cover this path.
 
@@ -147,3 +147,7 @@ The attacks are comparably cheap: the count attack is a table lookup, and the IK
 *Part of the [Crypto Lab](https://crypto-lab.systemslibrarian.dev/) suite.*
 
 *"So whether you eat or drink or whatever you do, do it all for the glory of God." — 1 Corinthians 10:31*
+
+## Auxiliary-corpus sensitivity
+
+[Revisiting the attacker’s knowledge in inference attacks against SSE](https://arxiv.org/abs/2504.09879), 14 April 2025, ACNS 2025, studies auxiliary-data similarity and sample size. Exhibit 4 now separates exact-target statistics, arbitrary statistic jitter, and independently sampled modeled corpora (64 documents, 12 from the same auxiliary generator, or a declared payroll-heavy distribution shift). Counts and co-occurrences come jointly from each corpus; counts are rescaled to the public target size for the count attack. The fixed handwritten target is not asserted to be drawn from that generator. Matrix RMSE and three actual seeded recovery results are evaluation metrics, not attacker inputs or a replication of the paper. Annealing is heuristic: no monotonic recovery guarantee, realistic-error calibration, or general SSE safety threshold is claimed.

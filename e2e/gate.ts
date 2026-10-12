@@ -929,7 +929,7 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
   await scanAt('the attack run with exact background knowledge');
 
   await page.locator('#attack-noise').fill('150');
-  await expect(page.locator('#attack-noise-value')).toHaveText('±150%');
+  await expect(page.locator('#attack-noise-value')).toHaveText('±150% synthetic jitter');
   await page.locator('#attack-run').click();
   await expect(page.locator('#attack-result table')).toBeVisible();
   await scanAt("the attack run with the adversary's knowledge degraded");
