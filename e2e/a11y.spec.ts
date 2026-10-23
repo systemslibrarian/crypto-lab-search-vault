@@ -24,8 +24,8 @@ import {
  * beside "recovered" ones; the challenge board guessed, checked, machine-scored
  * and cleared; 50 real searches timed; and finally the teardown cascade, where
  * clearing the server's log re-renders four other exhibits back to their
- * prompts. Every one of those states is scanned, in both themes, at desktop and
- * phone width.
+ * prompts. Every one of those states is scanned in the shipped dark theme at
+ * desktop and phone width.
  *
  * See `gate.ts` for why nothing is injected into the page, why no `<details>` is
  * opened from script, why the theme is seeded rather than toggled, why the lab's
