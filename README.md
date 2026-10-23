@@ -118,7 +118,7 @@ Both Playwright scripts build first and start `vite preview` on port **4237** au
 
 ## Build & Verify
 
-**77 unit tests**, all passing, run by `npm test` and gating the deploy.
+**82 unit tests**, all passing, run by `npm test` and gating the deploy.
 
 **11 specification known-answer vectors:**
 
@@ -132,7 +132,7 @@ Beyond the KATs, the suite covers: index construction (one posting per keyword�
 
 **Functional browser gate:** `e2e/claims.spec.ts` drives the production build and asserts the numbers each exhibit puts on screen — against each other, not against constants. The 14 per-keyword row counts must sum to the store's own total; the search verdict's document set must be the set the client decrypted, the set the server says it sent, and the set in the ledger row; the exposure percentage must be the touched/total the summary itself reports, and the histogram's per-token query counts must partition the query total; the attack's headline must be the tally of its own per-token table, with the count-attack figure matching the rows it labelled; the challenge score must equal the rows it marked recovered; and the measured latency must be the measured total over the measured run count. Every failure path is asserted to reach its state *and* name its cause — the miss path, the empty query, the attack with nothing to attack, the board with nothing to work with. Uncaught page exceptions fail the run.
 
-**Accessibility gate:** `@axe-core/playwright` scans the production build for WCAG 2.1 A/AA violations in **both themes**, across four scans — every exhibit driven to its post-interaction state, and the empty/miss states that are the other branch of each conditional render. Zero violations required; a regression blocks the deploy.
+**Accessibility gate:** `@axe-core/playwright` scans the production build for WCAG 2.1 A/AA violations in the shipped dark theme at desktop and 380 px widths — every exhibit is driven to its post-interaction state, along with the empty and miss branches of conditional renders. Zero violations are required; a regression blocks the deploy.
 
 ---
 

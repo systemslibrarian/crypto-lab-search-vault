@@ -42,8 +42,8 @@ export const NARROW = { width: 380, height: 800 };
  *     built was overwritten by the next click before anything measured it. The
  *     arrival state, where nine of the page's regions are empty prompts and two
  *     buttons ship disabled, was never scanned at all: `driveMain` is called
- *     immediately after `goto`. This gate scans after every one of 30 steps, in
- *     {dark, light} x {1280, 380}.
+ *     immediately after `goto`. This gate scans after every one of 30 steps in
+ *     the shipped dark theme at 1280 and 380 pixels.
  *
  *  4. `violations` IS NOT THE WHOLE ORACLE, and the companion spec that was
  *     meant to cover the gap did not. `border-contrast.spec.ts` measured
@@ -55,7 +55,7 @@ export const NARROW = { width: 380, height: 800 };
  *     the page — was in the first group, measuring 1.46:1 in dark and 1.43:1 in
  *     light while the spec reported green. That spec has been deleted rather
  *     than repaired: `auditControlBoundaries` below queries every control-shaped
- *     element in `#app`, in both themes, at 27 driven states, and resolves
+ *     element in `#app`, in the shipped dark theme at every driven state, and resolves
  *     `color-mix()` through a canvas rather than a regex that throws on it.
  *
  *  5. IT HAD NO REFLOW ORACLE and never opened a phone-width viewport, in a page
