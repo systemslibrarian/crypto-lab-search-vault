@@ -9,12 +9,13 @@ import {
 } from './query-integrity';
 import { SearchServer } from './server';
 import type { EncryptedVault, VaultKeys } from './types';
+import type { QueryCheckpoint } from './query-integrity';
 
 let keys: VaultKeys;
 let vault: EncryptedVault;
 let server: SearchServer;
 let snapshotId: string;
-let checkpoints: Map<string, Awaited<ReturnType<typeof buildQueryCheckpoints>> extends Map<string, infer T> ? T : never>;
+let checkpoints: Map<string, QueryCheckpoint>;
 
 beforeAll(async () => {
   keys = generateKeys();
