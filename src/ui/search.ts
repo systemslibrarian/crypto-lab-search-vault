@@ -10,7 +10,8 @@ import { addressFor, openDocument, searchToken } from '../sse/client';
 import { KEYWORDS } from '../sse/corpus';
 import { tokenLabel } from '../sse/leakage';
 import { badge, clear, el, labelled, panel, scrollRegion, shortHex, verdict } from './dom';
-import { getState, onChange, resetLedger, runAllQueries, runSearch } from './state';
+import { getState, onChange, resetLedger, runAllQueries, runIntegrityTrial, runSearch } from './state';
+import type { QueryReplyMode } from '../sse/query-integrity';
 
 export function renderSearch(): HTMLElement {
   const { section, body } = panel(
@@ -63,9 +64,46 @@ export function renderSearch(): HTMLElement {
     'aria-label': 'Search outcome',
   });
 
+  const integrityMode = el(
+    'select',
+    { id: 'integrity-mode' },
+    el('option', { value: 'honest', text: 'Honest current answer' }),
+    el('option', { value: 'omit', text: 'Omit one authentic posting' }),
+    el('option', { value: 'fabricate', text: 'Fabricate one posting' }),
+    el('option', { value: 'stale', text: 'Replay an older snapshot' }),
+  ) as HTMLSelectElement;
+  const integrityBtn = el(
+    'button',
+    { id: 'integrity-run', type: 'button' },
+    'Test the answer',
+  );
+  const integrityResult = el('div', {
+    id: 'integrity-result',
+    role: 'status',
+    'aria-live': 'polite',
+    'aria-label': 'Query integrity result',
+  });
+  const integrityLab = el(
+    'div',
+    { id: 'integrity-lab' },
+    el('h3', { text: 'Can the server lie about the answer?' }),
+    el('p', {
+      class: 'note',
+      text:
+        'AES-GCM proves that each returned posting is authentic. It does not by itself prove that the server returned every match or that the answer came from the current database snapshot. This exercise adds a client-retained checkpoint for one snapshot: opaque token, expected result count, snapshot id, and a SHA-256 digest of the complete ordered encrypted answer. It is a teaching construction, not a general verifiable-SSE protocol.',
+    }),
+    el(
+      'div',
+      { class: 'controls' },
+      labelled('Server behavior', integrityMode),
+      integrityBtn,
+    ),
+    integrityResult,
+  );
+
   const ledgerSlot = el('div', { id: 'search-ledger' });
 
-  body.append(controls, split, outcome, ledgerSlot);
+  body.append(controls, split, outcome, integrityLab, ledgerSlot);
   body.append(
     el(
       'p',
@@ -268,6 +306,75 @@ export function renderSearch(): HTMLElement {
     );
   }
 
+  integrityBtn.addEventListener('click', () => {
+    void (async () => {
+      clear(integrityResult);
+      const keyword = input.value.trim().toLowerCase();
+      if (!KEYWORDS.includes(keyword as (typeof KEYWORDS)[number])) {
+        integrityResult.append(
+          verdict(
+            'info',
+            'ℹ',
+            'USE AN INDEXED KEYWORD',
+            'The checkpoint table exists only for this snapshot’s indexed keywords. Choose one of the suggestions so the exercise has a complete answer to compare against.',
+          ),
+        );
+        return;
+      }
+
+      const mode = integrityMode.value as QueryReplyMode;
+      const { verification, individualAuthentication, returnedIds } =
+        await runIntegrityTrial(keyword, mode);
+
+      if (verification.ok) {
+        integrityResult.append(
+          verdict(
+            'ok',
+            '✓',
+            'COMPLETE AND CURRENT',
+            `All ${verification.actualCount} returned postings authenticated, and the client checkpoint matched the complete encrypted answer for the current snapshot.`,
+          ),
+        );
+        return;
+      }
+
+      if (verification.reason === 'count-mismatch') {
+        integrityResult.append(
+          verdict(
+            'warn',
+            '⚠',
+            'AUTHENTIC BUT INCOMPLETE',
+            `The ${returnedIds.length} returned postings all passed AES-GCM authentication, but the client checkpoint expected ${verification.expectedCount}. Per-record authenticity alone did not reveal the omission; the completeness checkpoint did.`,
+          ),
+        );
+        return;
+      }
+
+      if (verification.reason === 'stale-snapshot') {
+        integrityResult.append(
+          verdict(
+            'warn',
+            '↩',
+            'AUTHENTIC BUT STALE',
+            `All ${returnedIds.length} returned postings still authenticated, but the answer was labelled for a different snapshot. Freshness requires an independent current snapshot reference, not just valid ciphertexts.`,
+          ),
+        );
+        return;
+      }
+
+      integrityResult.append(
+        verdict(
+          'exposed',
+          '✗',
+          'FABRICATED ANSWER REJECTED',
+          individualAuthentication === 'failed'
+            ? 'The forged posting failed AES-GCM authentication, and the full-answer checkpoint also disagreed. This is the easy integrity case: both protections detect it.'
+            : 'The full-answer checkpoint disagreed with the same-size reply. The client rejected the answer.',
+        ),
+      );
+    })();
+  });
+
   searchBtn.addEventListener('click', () => void doSearch(input.value));
   input.addEventListener('keydown', (e) => {
     if ((e as KeyboardEvent).key === 'Enter') void doSearch(input.value);
@@ -299,6 +406,14 @@ export function renderSearch(): HTMLElement {
       'Server — what it observed',
     ),
     el('p', { class: 'side-note', text: 'Nothing yet.' }),
+  );
+  integrityResult.append(
+    verdict(
+      'info',
+      'ℹ',
+      'TRY A DISHONEST SERVER',
+      'Keep the keyword set to “breach”, choose a server behavior, and compare individual posting authentication with completeness and freshness.',
+    ),
   );
   renderLedger();
 

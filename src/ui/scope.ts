@@ -18,6 +18,7 @@ export function renderScope(): HTMLElement {
       el('li', {}, 'AES-256-GCM (NIST SP 800-38D) via WebCrypto for every posting and document body, with the address bound in as associated data — verified against the GCM specification vectors.'),
       el('li', {}, `The encrypted inverted index itself: ${KEYWORDS.length} keywords over ${CORPUS.length} documents, built and searched exactly as described.`),
       el('li', {}, 'The server’s query log — written by the code path that answers the query, so it records what a real server would genuinely observe.'),
+      el('li', {}, 'The query-integrity exercise builds client-retained checkpoints from the encrypted snapshot that was actually produced: snapshot id, expected answer count and a SHA-256 digest over the complete ordered encrypted answer. Its dishonest-server cases alter only copied replies; the normal SearchServer remains honest-but-curious.'),
       el('li', {}, 'The count attack and the IKK simulated-annealing attack, run against that log with no access to keys or plaintext.'),
       el('li', {}, 'Keys are generated per session with crypto.getRandomValues and held in memory only. Nothing is persisted; nothing leaves the browser.'),
     ),
@@ -29,6 +30,7 @@ export function renderScope(): HTMLElement {
       el('li', {}, `The corpus is ${CORPUS.length} short documents and ${KEYWORDS.length} keywords so the attack finishes while you watch. Real leakage-abuse studies run over tens of thousands of documents and thousands of keywords.`),
       el('li', {}, 'The client and the server are two objects in one page. There is no network, so nothing here measures network-level leakage — and a real deployment leaks timing and message sizes too.'),
       el('li', {}, 'Exact-statistics mode is a favorable attacker control derived from the target. Its slider adds synthetic jitter, not realistic error. Other modes use independently sampled modeled corpora; they are educational sensitivity experiments.'),
+      el('li', {}, 'The completeness checkpoint deliberately keeps per-query client metadata for one static snapshot. That is enough to expose the difference between authentic records and a complete, fresh answer, but it is not a scalable or general verifiable-search protocol.'),
     ),
 
     el('h3', { text: 'What this does NOT prove' }),
@@ -39,6 +41,7 @@ export function renderScope(): HTMLElement {
       el('li', {}, 'It does not prove the attack works at deployment scale on any particular system. Published results vary widely with corpus, vocabulary and how much the adversary really knows.'),
       el('li', {}, 'It proves nothing about the security of AES-GCM or HMAC-SHA-256. Neither was attacked; both held throughout.'),
       el('li', {}, 'A recovery of 100% at zero background-knowledge error is a property of an exact-statistics adversary, not a claim about the real world.'),
+      el('li', {}, 'The checkpoint exercise does not prove this SSE construction is verifiable in production. It assumes the client already retained a trusted current snapshot reference and the exact expected encrypted answer commitment.'),
     ),
 
     el('h3', { text: 'Deliberately out of scope' }),
