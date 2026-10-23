@@ -5,10 +5,18 @@
  *   ever handed either one — the adversary-side exhibits read only
  *   `server.observations()`, which is what a real server would hold.
  */
-import { toHex } from '../core/bytes';
+import { randomBytes, toHex } from '../core/bytes';
 import { buildVault, generateKeys, openPostings, searchToken } from '../sse/client';
 import { CORPUS, KEYWORDS } from '../sse/corpus';
 import { SearchServer } from '../sse/server';
+import {
+  buildQueryCheckpoints,
+  makeIntegrityTrialReply,
+  verifyQueryReply,
+  type QueryCheckpoint,
+  type QueryReplyMode,
+  type QueryVerification,
+} from '../sse/query-integrity';
 import type { BuildStep, VaultKeys } from '../sse/types';
 
 export interface AppState {
@@ -17,6 +25,9 @@ export interface AppState {
   steps: BuildStep[];
   /** token → keyword, known to the demo narrator only (for scoring) */
   truth: Map<string, string>;
+  /** Client-retained metadata for the integrity exercise; never handed to the server. */
+  queryCheckpoints: Map<string, QueryCheckpoint>;
+  snapshotId: string;
 }
 
 type Listener = () => void;
@@ -30,7 +41,9 @@ export async function initState(): Promise<AppState> {
   const server = new SearchServer(vault);
   const truth = new Map<string, string>();
   for (const w of KEYWORDS) truth.set(toHex(await searchToken(keys, w)), w);
-  state = { keys, server, steps, truth };
+  const snapshotId = toHex(randomBytes(16));
+  const queryCheckpoints = await buildQueryCheckpoints(keys, vault, KEYWORDS, snapshotId);
+  state = { keys, server, steps, truth, queryCheckpoints, snapshotId };
   return state;
 }
 
@@ -64,6 +77,37 @@ export async function runSearch(keyword: string): Promise<{
   const documents = server.fetchDocuments(token, ids);
   notify();
   return { token, ids, documents };
+}
+
+
+/**
+ * Run the dishonest-server integrity exercise without changing SearchServer's
+ * honest-but-curious behavior. The returned postings come from the real query,
+ * then a copied reply is altered only for the selected learner scenario.
+ */
+export async function runIntegrityTrial(
+  keyword: string,
+  mode: QueryReplyMode,
+): Promise<{
+  verification: QueryVerification;
+  individualAuthentication: 'passed' | 'failed';
+  returnedIds: string[];
+}> {
+  const { keys, server, queryCheckpoints, snapshotId } = getState();
+  const token = await searchToken(keys, keyword);
+  const checkpoint = queryCheckpoints.get(toHex(token));
+  if (!checkpoint) throw new Error('No checkpoint exists for that keyword in this snapshot.');
+
+  const honestPostings = await server.search(token);
+  const reply = makeIntegrityTrialReply(honestPostings, snapshotId, mode);
+  const verification = await verifyQueryReply(checkpoint, reply);
+
+  try {
+    const returnedIds = await openPostings(keys, keyword, reply.postings);
+    return { verification, individualAuthentication: 'passed', returnedIds };
+  } catch {
+    return { verification, individualAuthentication: 'failed', returnedIds: [] };
+  }
 }
 
 /** Issue every keyword exactly once — a flat, unrealistically even log. */
