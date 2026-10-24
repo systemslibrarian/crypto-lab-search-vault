@@ -1,4 +1,4 @@
-/** Browser-derived acceptance claims for Exhibit 7's real PEKS computation. */
+/** Browser-derived acceptance claims for Exhibit 8's real PEKS computation. */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 const pageErrors = new WeakMap<Page, string[]>();

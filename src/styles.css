@@ -277,6 +277,15 @@ body {
 #app input[type='text'] {
   padding-right: 0.6rem;
 }
+#oxt-query {
+  flex: 1 1 16rem;
+  min-width: 0;
+  width: auto;
+}
+.control-group:has(#oxt-query) {
+  flex: 1 1 34rem;
+  flex-wrap: wrap;
+}
 #app input[type='range'] {
   accent-color: var(--accent);
   width: min(100%, 16rem);

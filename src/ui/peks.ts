@@ -1,5 +1,5 @@
 /**
- * Exhibit 7 — public-key encryption with keyword search (PEKS).
+ * Exhibit 8 — public-key encryption with keyword search (PEKS).
  *
  * The pairing implementation is dynamically imported only when the learner
  * asks to build the public-key tags. Search Vault's existing SSE first paint
@@ -32,7 +32,7 @@ interface PeksUiState {
 
 export function renderPeks(): HTMLElement {
   const { section, body } = panel(
-    'EXHIBIT 7',
+    'EXHIBIT 8',
     'Public-key search — and the trapdoor dictionary attack',
     'A sender now builds randomized searchable tags with only the recipient’s public key. The recipient issues a trapdoor, the server runs the public Test algorithm over every tag, and an attacker uses that same public interface to verify bounded keyword guesses offline.',
   );

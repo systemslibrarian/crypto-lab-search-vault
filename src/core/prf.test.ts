@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { concat, fromHex, toHex, utf8, u32be, frame, ctEqual } from './bytes';
-import { DOMAIN, hmacSha256, prf, sha256 } from './prf';
+import { DOMAIN, hmacSha256, hmacSha512, prf, sha256 } from './prf';
 
 /** RFC 4231 §4 — HMAC-SHA-256 known-answer vectors. These pin the PRF that
  *  every search token, index address, and posting key in this demo is built
@@ -52,6 +52,18 @@ describe('HMAC-SHA-256 — RFC 4231 known-answer tests', () => {
       expect(toHex(await hmacSha256(c.key, c.data))).toBe(c.mac);
     });
   }
+});
+
+/** RFC 4231 §4.2 — pins the wide MAC used before OXT scalar reduction. */
+describe('HMAC-SHA-512 — RFC 4231 known-answer test', () => {
+  it('matches Test Case 1 without truncation', async () => {
+    expect(
+      toHex(await hmacSha512(new Uint8Array(20).fill(0x0b), utf8('Hi There'))),
+    ).toBe(
+      '87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cde' +
+        'daa833b7d6b8a702038b274eaea3f4e4be9d914eeb61f1702e696c203a126854',
+    );
+  });
 });
 
 /** FIPS 180-4 / NIST example vectors for the hash under the HMAC. */

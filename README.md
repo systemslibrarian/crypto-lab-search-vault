@@ -1,8 +1,8 @@
 # Search Vault
 
-**Searchable symmetric encryption · public-key keyword search**
+**Single-keyword SSE · OXT conjunctions · public-key keyword search**
 
-Executable searchable encryption from two role models: a symmetric encrypted index whose access pattern enables inference attacks, and public-key searchable tags whose exposed trapdoor enables offline keyword guessing.
+Executable searchable encryption across three query models: a symmetric encrypted index whose access pattern enables inference attacks, a bounded OXT conjunction whose cross-tokens change the leakage, and public-key searchable tags whose exposed trapdoor enables offline keyword guessing.
 
 **Live demo:** https://systemslibrarian.github.io/crypto-lab-search-vault/
 
@@ -10,7 +10,7 @@ Executable searchable encryption from two role models: a symmetric encrypted ind
 
 ## What It Is
 
-An encrypted inverted index, built and searched in your browser, plus the published attacks that turn its leakage back into your queries. A focused PEKS extension then separates public sender, recipient, and server roles with real BLS12-381 pairings.
+An encrypted inverted index, built and searched in your browser, plus published attacks that turn its leakage back into queries. A bounded two-keyword OXT extension compares one structured conjunction with two independent SSE searches. A focused PEKS extension then separates public sender, recipient, and server roles with real BLS12-381 pairings.
 
 The scheme is a single-keyword SSE construction in the Song–Wagner–Perrig (2000) / Curtmola–Garay–Kamara–Ostrovsky (SSE-1, 2006) style, with real primitives throughout:
 
@@ -24,7 +24,18 @@ The scheme is a single-keyword SSE construction in the Song–Wagner–Perrig (2
 
 The SSE primitives run through WebCrypto. Keys are generated per session with `crypto.getRandomValues`, held in memory, and never persisted or transmitted.
 
-**The public-key extension.** Exhibit 7 implements an algebra-preserving Type-3 BLS12-381 adaptation of Boneh–Di Crescenzo–Ostrovsky–Persiano PEKS (EUROCRYPT 2004). With `e : G1 × G2 → GT`, the recipient chooses `x` and publishes `X = xP2`. A sender with only `X` and keyword `w` samples fresh nonzero `r`, stores `A = rP2` and `B = H2(e(H1(w), rX))`, and discards `r`. The recipient issues `T_w = xH1(w)`; the server tests whether `B = H2(e(T_w, A))`. `H1` is RFC 9380 hash-to-BLS12-381-G1 under a PEKS-specific domain, while `H2` is SHA-256 over a domain-separated, length-framed 576-byte noble Fp12 coefficient encoding.
+**The conjunctive extension.** Exhibit 7 accepts exactly two distinct indexed keywords joined by `AND`. In isolated state, the naïve route issues two real existing-SSE queries and intersects both complete posting lists at the client. The bounded OXT route chooses the lower-frequency term `s` from client-only corpus knowledge (ASCII order breaks ties), walks only its flat addressed TSet, and tests the other term `x` against a sorted exact XSet of canonical RFC 9496 ristretto255 encodings:
+
+```text
+XSet(w,id) = [F_X(w) F_I(id)]B
+y(s,c,id)  = F_I(id) / F_Z(s,c) mod l
+xtoken(c)   = [F_Z(s,c) F_X(x)]B
+[y]xtoken   = [F_I(id) F_X(x)]B
+```
+
+Five independent OXT-only keys feed length-framed HMAC-SHA-256 labels, HMAC-SHA-512-to-nonzero-scalar derivation, and AES-256-GCM identifier ciphertexts. TSet scalars use canonical 32-byte little-endian encodings, and every identifier has one fixed UTF-8 byte length so ciphertext length does not distinguish document identifiers. Each keyword list is CSPRNG-shuffled before its one-based counters are bound; all 55 TSet rows are shuffled again before server insertion so setup order does not expose list boundaries. XSet membership is exact, not a Bloom filter. This is a static two-term teaching adapter, not the original paper’s optimized TSet and not a transfer of its complete proof. RFC 9496 specifies the group encoding and operations; decisional Diffie–Hellman hardness is a separate explicit assumption.
+
+**The public-key extension.** Exhibit 8 implements an algebra-preserving Type-3 BLS12-381 adaptation of Boneh–Di Crescenzo–Ostrovsky–Persiano PEKS (EUROCRYPT 2004). With `e : G1 × G2 → GT`, the recipient chooses `x` and publishes `X = xP2`. A sender with only `X` and keyword `w` samples fresh nonzero `r`, stores `A = rP2` and `B = H2(e(H1(w), rX))`, and discards `r`. The recipient issues `T_w = xH1(w)`; the server tests whether `B = H2(e(T_w, A))`. `H1` is RFC 9380 hash-to-BLS12-381-G1 under a PEKS-specific domain, while `H2` is SHA-256 over a domain-separated, length-framed 576-byte noble Fp12 coefficient encoding.
 
 Bilinearity proves executable correctness: `e(xH1(w), rP2) = e(H1(w), rX)`. It does **not** prove that the original symmetric-pairing BDH reduction transfers to this Type-3 adaptation. A precisely stated Type-3 hardness assumption and a separate formal reduction would be required; this lab supplies neither and makes no such security claim. The recipient, sender, server, and attacker are separate objects in one browser tab, not production network or process isolation.
 
@@ -36,7 +47,7 @@ Bilinearity proves executable correctness: `e(xH1(w), rP2) = e(H1(w), rX)`. It d
 
 That third item is the subject of the demo. Exhibit 2 also contains a separate dishonest-server integrity exercise: it alters a copy of the real answer after the normal honest-but-curious server computes it, so learners can compare per-record authenticity with answer completeness and freshness without changing the base server model. Leakage-abuse attacks (Islam–Kuzu–Kantarcioglu, NDSS 2012; Cash–Grubbs–Perry–Ristenpart, CCS 2015) reconstruct queries from the pattern alone, given background statistics about a similar corpus. Both attacks are implemented here and run against the log the page has actually accumulated while you used it.
 
-**Not production crypto — a teaching demo.** The SSE corpus is deliberately small (24 documents, 14 keywords) and the PEKS store has six synthetic tags, so both attack families finish while you watch. The index is static and every role is co-located in one page.
+**Not production crypto — a teaching demo.** The SSE/OXT corpus is deliberately small (24 documents, 14 keywords) and the PEKS store has six synthetic tags, so every exercise finishes while you watch. The indexes are static and every role is co-located in one page. No JavaScript constant-time, process-isolation, multi-owner, collusion, dynamic-update, or active result-soundness/correctness, completeness, or freshness claim is made.
 
 ---
 
@@ -48,7 +59,8 @@ That third item is the subject of the demo. Exhibit 2 also contains a separate d
 4. **Break it: turn the access pattern back into queries** — the count attack pins any token whose result size is unique in the keyword universe; the IKK attack matches the observed token co-occurrence matrix against a known corpus's matrix by simulated annealing. A slider degrades the adversary's background knowledge so you can watch recovery fall off. The per-token table reports what the adversary said, how confident it was, and what the token actually was.
 5. **Your turn: you are the server** — you get the tokens, their result sizes, their overlaps, and the same public statistics the attack gets. Assign keywords to tokens by hand, score yourself, then let the machine try the same puzzle.
 6. **SSE, ORAM, FHE** — what each hides and what each costs. The SSE latency column is measured in your browser on this vault; the ORAM and FHE columns are labelled as cited, order-of-magnitude figures, because this page runs neither.
-7. **Public-key search — and the trapdoor dictionary attack** — generate a recipient key, build randomized tags using only its public key, issue and repeat a recipient trapdoor, scan every tag with public `Test`, and separate search-pattern, volume, and access leakage from an active bounded dictionary attack. Both a recovered target and an honestly worded bounded miss are executable states.
+7. **Two-keyword AND — naïve SSE versus bounded OXT** — execute both routes over the same corpus, inspect the exact tokens, posting sets, stag, cross-tokens, candidate points, match positions, counts and final access request, then run five controlled trace pairs that separate repeated s-term lookup from conditional candidate-point equality. A derived Path ORAM table accounts for fixed-volume protection as encrypted block transfers, not round trips.
+8. **Public-key search — and the trapdoor dictionary attack** — generate a recipient key, build randomized tags using only its public key, issue and repeat a recipient trapdoor, scan every tag with public `Test`, and separate search-pattern, volume, and access leakage from an active bounded dictionary attack. Both a recovered target and an honestly worded bounded miss are executable states.
 
 Plus a **scope** panel stating what is real, what is scaled down, what this does not prove, and what is deliberately out of scope.
 
@@ -69,7 +81,7 @@ Plus a **scope** panel stating what is real, what is scaled down, what this does
 - your index changes constantly and you have not chosen a scheme with forward and backward privacy.
 - you are tempted to reach for order-preserving or deterministic encryption to make SQL work. That leaks far more than this does.
 
-The PEKS exhibit is a construction-and-attack lesson, not a production recommendation. Public-key tag creation can be useful when senders must not share the recipient’s search secret, but basic PEKS adds a full tag scan, exposes deterministic trapdoors, permits offline guessing for low-entropy words, and supplies no sender authentication or tag/body binding.
+The OXT exhibit is a construction-and-leakage lesson, not a production recommendation. It supports only two-term `AND`, reveals the selected s-term lookup and list size, every membership-test position, conditional point equalities, final result volume, and requested document identifiers. The PEKS exhibit is likewise a construction-and-attack lesson. Public-key tag creation can be useful when senders must not share the recipient’s search secret, but basic PEKS adds a full tag scan, exposes deterministic trapdoors, permits offline guessing for low-entropy words, and supplies no sender authentication or tag/body binding.
 
 ---
 
@@ -77,7 +89,7 @@ The PEKS exhibit is a construction-and-attack lesson, not a production recommend
 
 https://systemslibrarian.github.io/crypto-lab-search-vault/
 
-You can: step the index build for any of the 14 keywords; search real and non-existent keywords and watch the server's log fill; observe a realistically skewed round of queries; read the three SSE leakage views; run both SSE inference attacks at any level of adversary background-knowledge error; try to deanonymise the tokens yourself; time 50 real searches; then build real PEKS tags, repeat a trapdoor, and run successful, absent-target, and zero-guess bounded dictionary cases.
+You can: step the index build for any of the 14 keywords; search real and non-existent keywords and watch the server's log fill; observe a realistically skewed round; read the three SSE leakage views; run both inference attacks at any level of adversary background-knowledge error; try to deanonymise tokens yourself; time 50 searches; compare a real naïve conjunction with bounded OXT; measure five equality/intersection controls; inspect the fixed-result Path ORAM cost; then build real PEKS tags, repeat a trapdoor, and run successful, absent-target, and zero-guess bounded dictionary cases.
 
 ---
 
@@ -90,6 +102,9 @@ You can: step the index build for any of the 14 keywords; search real and non-ex
 - **A static index hides an ongoing hazard.** This demo builds the index once. Adding documents later leaks whether a new document matches an earlier query unless the scheme is explicitly forward-private.
 - **Tampering fails closed, and that is deliberate.** Each posting is sealed with its own address as associated data, so a server that relocates, forges or flips a row causes the whole result to be rejected rather than silently mis-answered. Six tests cover this path.
 - **Authentic records can still form an incomplete or stale answer.** Omitting one valid posting leaves every returned AES-GCM ciphertext authentic; replaying a previously valid answer can also preserve record authenticity. The integrity exercise detects those cases only because the client retained an independent checkpoint for the expected answer and current snapshot. That checkpoint is intentionally a teaching construction, not a claim of a general verifiable-SSE protocol.
+- **OXT changes leakage; it does not erase it.** This adapter avoids sending the full x-term posting list, but it reveals a repeatable stag for `s`, the s-list size, one candidate point and exact membership outcome per s-list row, result volume, and the final document-identifier access request. Same-x queries repeat candidate points only where their s-lists overlap; zero repeats therefore does not prove that x changed.
+- **Exact XSet membership is not active result verification.** It avoids Bloom-filter false positives when the honest-but-curious server executes the lookup. AES-GCM rejects changed or relocated identifier ciphertexts, but a malicious server can still omit a valid match or falsely include an authentic s-list row that failed the x-term test. The client therefore gets neither active-server soundness/correctness nor completeness from these mechanisms; the static adapter also supplies no version/freshness proof. The complete OXT theorem is not claimed for the flat TSet substitution.
+- **The ORAM comparison has a narrow trust boundary.** Padding this 24-document corpus to three logical fetches costs 144 encrypted block transfers under the displayed `Z=4`, `L=5`, one-document-per-block model. It hides final addresses and volume only from a separate non-colluding semi-honest storage server; it does not hide the OXT search transcript, query volume, or timing, and no ORAM is executed here.
 - **An exposed PEKS trapdoor is a keyword oracle for a small dictionary.** Anyone with the public key and trapdoor can create a fresh tag for a candidate and invoke public `Test` locally. A secure channel can stop an outside capture, but not the search server that receives the trapdoor.
 - **A bounded miss proves only a bounded miss.** If no tested candidate passes, the target may be absent or beyond the chosen bound. It does not establish trapdoor privacy or security.
 - **Public writers are not authenticated.** Basic PEKS lets anyone with `X` make a tag, but does not prove a word appears in a separately encrypted body, bind tag to body, or authenticate the sender. `Test` also gives no completeness or freshness guarantee.
@@ -107,6 +122,11 @@ For PEKS, public encryption changes who may create searchable data, not whether 
 
 ### Primary sources and construction boundary
 
+- Cash, Jarecki, Jutla, Krawczyk, Roşu, and Steiner, [*Highly-Scalable Searchable Symmetric Encryption with Support for Boolean Queries*](https://eprint.iacr.org/2013/169), CRYPTO 2013 — OXT construction, cross-tags, and conjunctive-search leakage basis.
+- [RFC 9496](https://www.rfc-editor.org/rfc/rfc9496.html), especially Appendix A — ristretto255 encodings, valid multiples, and invalid-encoding rejection cases pinned by the tests. The RFC does not prove DDH.
+- Stefanov et al., [*Path ORAM: An Extremely Simple Oblivious RAM Protocol*](https://people.csail.mit.edu/devadas/pubs/PathORAMJACM.pdf) — the path, bucket, position-map, and stash model behind the derived transfer table.
+- Cash et al., [*The Fallacy of Composition of Oblivious RAM and Searchable Encryption*](https://eprint.iacr.org/2015/668) — why a separate ORAM store does not erase the search server’s transcript and why non-collusion is an assumption.
+- Lai et al., [*Result Pattern Hiding Searchable Encryption for Conjunctive Queries*](https://eprint.iacr.org/2018/1168) — related OXT/HXT leakage terminology. This lab does not conflate HXT’s keyword-pair result pattern with every OXT result observation.
 - Boneh, Di Crescenzo, Ostrovsky, and Persiano, [*Public Key Encryption with Keyword Search*](https://web.cs.ucla.edu/~rafail/PUBLIC/61.pdf), EUROCRYPT 2004 — original `KeyGen`, `PEKS`, `Trapdoor`, and `Test` construction and security game.
 - [RFC 9380](https://www.rfc-editor.org/rfc/rfc9380.html), especially §8.8 and Appendix J.9.1 — BLS12-381 hash-to-curve suite and the unit-test point.
 - Byun et al., [*Off-Line Keyword Guessing Attacks on Recent Keyword Search Schemes over Encrypted Data*](https://doi.org/10.1007/11844662_6), 2006 — low-entropy keyword-space attack boundary.
@@ -145,22 +165,24 @@ Both Playwright scripts build first and start `vite preview` on port **4237** au
 
 ## Build & Verify
 
-**117 unit tests**, all passing, run by `npm test` and gating the deploy.
+**180 unit tests in 15 files**, all passing, run by `npm test` and gating the deploy.
 
-**12 published specification known-answer cases:**
+**19 published positive known-answer cases plus all 29 RFC 9496 invalid encodings:**
 
 | File | Vectors |
 | --- | --- |
 | `src/core/prf.test.ts` | 6 × HMAC-SHA-256 from RFC 4231 §4 (cases 1, 2, 3, 4, 6, 7) |
+| `src/core/prf.test.ts` | 1 × untruncated HMAC-SHA-512 from RFC 4231 §4.2 |
 | `src/core/prf.test.ts` | 3 × SHA-256 from FIPS 180-4 (empty, `"abc"`, the 448-bit two-block message) |
 | `src/core/aead.test.ts` | 2 × AES-256-GCM from the GCM specification's vector set (test cases 13 and 14), checked in both directions |
+| `src/oxt/core.test.ts` | 6 × RFC 9496 Appendix A.1 ristretto255 multiples (`B[0]`, `B[1]`, `B[2]`, `B[6]`, `B[10]`, `B[15]`) plus all 29 Appendix A.2 invalid encodings |
 | `src/peks/core.test.ts` | 1 × RFC 9380 Appendix J.9.1 BLS12381G1 hash-to-curve point, checked in both affine coordinates |
 
-Beyond the KATs, the suite covers: index construction (one posting per keyword–document pair, distinct pseudorandom addresses, no two identical ciphertexts); search correctness for every keyword in the corpus; the miss path for unindexed keywords and random tokens; six SSE fail-closed cases; what the server's ledger does and does not record; leakage computations and inference attacks; and the query-integrity checkpoint. PEKS tests pin an independently derived fixed `x=7, r=11` transcript; verify the two pairing routes and full H2 digest; require randomized equal-keyword tags; reject wrong keywords, foreign recipients, tampered digests, identity, malformed, non-canonical, and non-subgroup point encodings; prove the server record shape contains no keyword, scalar, randomness, body, or demo GT element; and exercise recovered, absent, truncated, zero-bound, normalized-duplicate, and wrong-recipient dictionaries.
+Beyond the KATs, the suite covers: index construction (one posting per keyword–document pair, distinct pseudorandom addresses, no two identical ciphertexts); search correctness for every keyword in the corpus; the miss path for unindexed keywords and random tokens; six SSE fail-closed cases; what the server's ledger does and does not record; leakage computations and inference attacks; and the query-integrity checkpoint. OXT tests independently pin the `F_X=2`, `F_I=3`, `F_Z=5` cancellation transcript; exercise wide little-endian scalar reduction and forced-zero retry; require 55 unique flat TSet rows and 55 sorted exact XSet elements; verify every one of the 91 keyword pairs in both operand orders against plaintext; reject unsupported grammar before a transcript; check the three required leakage controls plus repeated-s and identical-query cases; authenticate, bind, and corpus-check result identifiers; demonstrate why an authentic s-list row is not an active-server x-membership proof; and derive all four Path ORAM padding cases. PEKS tests pin an independently derived fixed `x=7, r=11` transcript; verify the two pairing routes and full H2 digest; require randomized equal-keyword tags; reject wrong keywords, foreign recipients, tampered digests, identity, malformed, non-canonical, and non-subgroup point encodings; prove the server record shape contains no keyword, scalar, randomness, body, or demo GT element; and exercise recovered, absent, truncated, zero-bound, normalized-duplicate, and wrong-recipient dictionaries.
 
-**Functional browser gate:** `e2e/claims.spec.ts` drives the production build and asserts each SSE number against other rendered evidence rather than constants. `e2e/query-integrity.spec.ts` separately drives all four integrity cases plus unindexed-keyword refusal. `e2e/peks.spec.ts` proves the sender/server record counts agree, repeated-word tag bytes differ in that measured run, every server tag receives `Test`, matched rows equal the verdict and ledger, repeated trapdoors match in all 48 bytes, the attack headline equals its first passing row, bounded misses make no security claim, build failure keeps dependent controls disabled, an in-flight attack cannot restore evidence after its trapdoor is retired, and a rebuild retires all prior-key evidence. Uncaught page or console errors fail the run.
+**Functional browser gate:** `e2e/claims.spec.ts` drives the production build and asserts each SSE number against other rendered evidence rather than constants. `e2e/query-integrity.spec.ts` separately drives all four integrity cases plus unindexed-keyword refusal. `e2e/oxt.spec.ts` cross-checks rendered query volumes and counts against actual rows and match badges, measures naïve repeat-token flags, compares every full stag/xtoken/candidate byte under reversed operands, requires invalid input to clear evidence, distinguishes parser rejection from crypto execution failure, pins all five controlled traces and all four ORAM rows, and proves an in-flight completion cannot restore stale evidence. `e2e/peks.spec.ts` proves the sender/server record counts agree, repeated-word tag bytes differ in that measured run, every server tag receives `Test`, matched rows equal the verdict and ledger, repeated trapdoors match in all 48 bytes, the attack headline equals its first passing row, bounded misses make no security claim, build failure keeps dependent controls disabled, an in-flight attack cannot restore evidence after its trapdoor is retired, and a rebuild retires all prior-key evidence. Uncaught page or console errors fail the run.
 
-**Accessibility gate:** `@axe-core/playwright` scans the production build for WCAG 2.1 A/AA violations in the supported dark theme at desktop and 380px. The shared drive scans 34 learner states per viewport, including PEKS arrival, build, query, repeat, attack success, absent-target miss, and zero-guess miss. Arithmetic text and control contrast, non-text contrast ratchets, keyboard-reachable scrollers, focus visibility, reduced motion, unique landmarks, and horizontal reflow are separate enforced oracles. Zero new violations are required; a regression blocks deployment.
+**Accessibility gate:** `@axe-core/playwright` scans the production build for WCAG 2.1 A/AA violations in the supported dark theme at desktop and 380px. The shared drive scans 38 learner states per viewport, including OXT arrival, valid and reversed queries, rejected grammar, controlled traces, and the PEKS arrival/build/query/repeat/attack states. Arithmetic text and control contrast, non-text contrast ratchets, keyboard-reachable scrollers, focus visibility, reduced motion, unique landmarks, and horizontal reflow are separate enforced oracles. Zero new violations are required; a regression blocks deployment.
 
 ---
 
@@ -169,6 +191,8 @@ Beyond the KATs, the suite covers: index construction (one posting per keyword�
 Search is fast because SSE lets the server do an ordinary index lookup: the work is proportional to the number of matching documents, not the size of the database. Exhibit 6 measures it live — 50 full searches, each covering token derivation, address probing, AES-GCM posting decryption and document fetch — and reports the per-search figure for your browser. On a modern laptop it lands in the low single-digit milliseconds.
 
 The attacks are comparably cheap: the count attack is a table lookup, and the IKK annealing (8 restarts × 12,000 iterations, plus a greedy polish) resolves 14 tokens in tens of milliseconds. Being cheap to attack is the point.
+
+The bounded OXT query walks only the selected s-term list and performs one ristretto255 multiplication plus one exact XSet lookup per row. That is a teaching-workload statement, not a deployment benchmark or a claim about the paper’s optimized TSet. The Path ORAM table is derived arithmetic only: 48 encrypted block transfers per logical fetch and 144 after padding to three fetches under the displayed assumptions.
 
 Basic PEKS has a different cost: this exhibit runs one pairing-based `Test` for every stored tag, so query work is proportional to the tag store rather than the number of matches. Each offline guess also constructs a real randomized tag and runs `Test`; the dictionary is deliberately small and the UI yields between guesses. No deployment-scale timing claim is made.
 

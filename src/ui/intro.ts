@@ -28,6 +28,10 @@ export function renderIntro(): HTMLElement {
       'Turning that leakage back into the secret. Given enough observed queries and some public statistics, an attacker can work out which keyword each token was.',
     ],
     [
+      'OXT conjunctive search',
+      'A searchable-encryption technique for AND queries. This lesson looks up the less frequent term and uses blinded group elements to test the other term without retrieving its whole posting list.',
+    ],
+    [
       'Public-key encryption with keyword search (PEKS)',
       'A different role split: anyone can create a searchable tag with a recipient public key, while only that recipient can issue the keyword trapdoor the server tests.',
     ],
@@ -63,7 +67,7 @@ export function renderIntro(): HTMLElement {
     el(
       'p',
       {},
-      'The final exhibit changes the roles with public-key encryption with keyword search: a sender needs only the recipient’s public key to make a searchable tag. You will run its real pairing equation, then see why an exposed trapdoor lets the server test low-entropy keyword guesses offline.',
+      'A later exhibit compares a naïve two-token AND with a bounded OXT construction and measures the equality and intersection evidence its server can retain. The next exhibit changes the roles again with public-key encryption with keyword search: a sender needs only the recipient’s public key to make a searchable tag, while an exposed trapdoor lets the server test low-entropy guesses offline.',
     ),
     el(
       'p',
@@ -75,7 +79,7 @@ export function renderIntro(): HTMLElement {
     el(
       'details',
       {},
-      el('summary', { text: 'Glossary — the seven terms you need for the rest of the page' }),
+      el('summary', { text: 'Glossary — the eight terms you need for the rest of the page' }),
       el(
         'dl',
         {},

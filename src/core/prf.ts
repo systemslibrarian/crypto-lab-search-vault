@@ -40,6 +40,21 @@ export async function hmacSha256(key: Uint8Array, message: Uint8Array): Promise<
   return new Uint8Array(mac);
 }
 
+/** Raw HMAC-SHA-512, used when a construction needs a wide PRF output before
+ * reducing into a scalar field. It is deliberately separate from the SSE
+ * label PRF above: changing this function cannot silently change vault labels. */
+export async function hmacSha512(key: Uint8Array, message: Uint8Array): Promise<Uint8Array> {
+  const k = await crypto.subtle.importKey(
+    'raw',
+    key as unknown as BufferSource,
+    { name: 'HMAC', hash: 'SHA-512' },
+    false,
+    ['sign'],
+  );
+  const mac = await crypto.subtle.sign('HMAC', k, message as unknown as BufferSource);
+  return new Uint8Array(mac);
+}
+
 /**
  * The PRF as this demo uses it: a domain tag plus length-framed inputs, so
  * F_K("address", t, 1) can never equal F_K("token", …) for any other split.
