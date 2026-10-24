@@ -221,7 +221,7 @@ test('PEKS bounded miss: absent and zero-guess cases never claim security', asyn
   await expect(page.locator('#peks-attack-result')).toContainText(
     '0 of at most 0 guesses were tested. This does not establish security',
   );
-  await expect(page.locator('#peks-dictionary-table tbody tr')).toHaveCount(0);
+  await expect(page.locator('#peks-dictionary-table')).toHaveCount(0);
 });
 
 test('changing the recipient keyword retires evidence tied to the old trapdoor', async ({ page }) => {

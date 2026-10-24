@@ -1011,7 +1011,7 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
   await page.locator('#peks-dictionary-bound').selectOption('0');
   await page.locator('#peks-attack').click();
   await expect(page.locator('#peks-attack-result')).toContainText('0 of at most 0 guesses');
-  await expect(page.locator('#peks-dictionary-table tbody tr')).toHaveCount(0);
+  await expect(page.locator('#peks-dictionary-table')).toHaveCount(0);
   await scanAt('PEKS zero-guess bound reported no security conclusion');
 
   // ── The teardown cascade ────────────────────────────────────────────────

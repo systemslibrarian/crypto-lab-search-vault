@@ -499,6 +499,7 @@ export function renderPeks(): HTMLElement {
         ),
       );
     }
+    if (result.attempts.length === 0) return;
     attackResult.append(
       scrollRegion(
         'Bounded PEKS dictionary attempts',
