@@ -26,24 +26,25 @@ export const NARROW = { width: 380, height: 800 };
  *
  *  2. IT FORCE-OPENED EVERY DISCLOSURE FROM SCRIPT. The same `settle()` ran
  *     `document.querySelectorAll('details').forEach(d => d.open = true)`. This
- *     page has six: the intro glossary, the server's complete store, the
+ *     page has seven: the intro glossary, the server's complete store, the
  *     overlap-as-numbers table, the attack's input matrix, the challenge's
- *     background knowledge and the scope panel's extension seams. Setting
+ *     background knowledge, the PEKS construction boundary, and the scope
+ *     panel's extension seams. Setting
  *     `.open` bypasses the `<summary>` that is a reader's only route to them,
- *     and — worse here than in most labs — TWO of those six do not EXIST until
+ *     and — worse here than in most labs — TWO of those seven do not EXIST until
  *     the drive has produced observations, so opening "every" `<details>` opened
  *     whichever subset happened to be rendered at the moment it ran. This gate
  *     clicks each summary and asserts the disclosure opened.
  *
- *  3. IT SCANNED ONCE PER DRIVE, AT ONE VIEWPORT. `driveMain()` walked all six
- *     exhibits — stepping the build, searching, running every keyword, drawing
+ *  3. IT SCANNED ONCE PER DRIVE, AT ONE VIEWPORT. `driveMain()` walked the six
+ *     original exhibits — stepping the build, searching, running every keyword, drawing
  *     the leakage views, running the attack at 60% noise, scoring the challenge,
  *     timing 50 searches — and then scanned ONCE, at the end. Every state it
  *     built was overwritten by the next click before anything measured it. The
- *     arrival state, where nine of the page's regions are empty prompts and two
- *     buttons ship disabled, was never scanned at all: `driveMain` is called
- *     immediately after `goto`. This gate scans after every one of 30 steps, in
- *     {dark, light} x {1280, 380}.
+ *     arrival state, where result regions are still prompts and several
+ *     controls ship disabled, was never scanned at all: `driveMain` is called
+ *     immediately after `goto`. This gate scans after every one of 34 steps in
+ *     the supported dark theme at both 1280px and 380px.
  *
  *  4. `violations` IS NOT THE WHOLE ORACLE, and the companion spec that was
  *     meant to cover the gap did not. `border-contrast.spec.ts` measured
@@ -55,7 +56,7 @@ export const NARROW = { width: 380, height: 800 };
  *     the page — was in the first group, measuring 1.46:1 in dark and 1.43:1 in
  *     light while the spec reported green. That spec has been deleted rather
  *     than repaired: `auditControlBoundaries` below queries every control-shaped
- *     element in `#app`, in both themes, at 27 driven states, and resolves
+ *     element in `#app` throughout the driven states, and resolves
  *     `color-mix()` through a canvas rather than a regex that throws on it.
  *
  *  5. IT HAD NO REFLOW ORACLE and never opened a phone-width viewport, in a page
@@ -190,16 +191,16 @@ export async function assertSingleBanner(page: Page): Promise<void> {
  * reads `localStorage.getItem('theme')` and the shared bar's toggle writes
  * `localStorage.setItem('theme', …)`. If those keys drift apart the theme
  * silently stops persisting, and this boot fails on `data-theme` rather than
- * quietly scanning dark twice. It also removes a real ordering hazard from the
- * old spec, which reached the light theme by CLICKING the toggle after `goto` —
- * so every light-theme scan measured a page that had been repainted mid-life
- * rather than one that loaded that way.
+ * quietly scanning the wrong palette. It also removes the ordering hazard in
+ * older versions of the spec, which changed theme after navigation rather than
+ * loading the requested theme from first paint.
  *
  * The defaults are asserted at length because THIS LAB SHIPS EMPTY BUT LOOKS
  * BUILT. `initState()` really does build the vault before anything renders, so
  * every hex value on screen is genuine from first paint — but the server's
- * ledger is empty, so nine regions are prompts, the leakage exhibit is a single
- * "not enough observed yet" verdict, and two challenge buttons ship `disabled`.
+ * ledger is empty, so result regions are prompts, the leakage exhibit is a single
+ * "not enough observed yet" verdict, challenge controls are disabled, and the
+ * PEKS roles do not exist until the learner builds them.
  * That is the state every reader arrives in, and the gate this replaces called
  * `driveMain()` on the line after `goto` and never once measured it.
  */
@@ -232,7 +233,7 @@ export async function boot(page: Page, theme: 'dark' | 'light'): Promise<void> {
 
   // `main()` is async — it awaits `initState()`, which does real WebCrypto — so
   // a navigation that resolves proves nothing at all about what is on screen.
-  await expect(page.locator('#exhibits > section.panel')).toHaveCount(8);
+  await expect(page.locator('#exhibits > section.panel')).toHaveCount(9);
   await expect(page.locator('#app .cl-hero-title')).toHaveText('Search Vault');
 
   // ── Exhibit 1 defaults ───────────────────────────────────────────────────
@@ -267,14 +268,25 @@ export async function boot(page: Page, theme: 'dark' | 'light'): Promise<void> {
   // ── Exhibit 6: nothing measured yet ──────────────────────────────────────
   await expect(page.locator('#compare-measurement')).toBeEmpty();
 
-  // Four disclosures exist on arrival — the intro glossary, the server's
-  // complete store, the challenge's background knowledge and the scope panel's
-  // extension seams. The other two (the overlap-as-numbers table and the
+  // ── Exhibit 7: pairing code is lazy and no recipient key exists yet ──────
+  await expect(page.locator('#peks-build-status')).toContainText('NOT BUILT YET');
+  await expect(page.locator('#peks-query')).toBeDisabled();
+  await expect(page.locator('#peks-repeat')).toBeDisabled();
+  await expect(page.locator('#peks-dictionary-mode')).toBeDisabled();
+  await expect(page.locator('#peks-dictionary-bound')).toBeDisabled();
+  await expect(page.locator('#peks-attack')).toBeDisabled();
+  await expect(page.locator('#peks-roles')).toBeEmpty();
+  await expect(page.locator('#peks-query-result')).toBeEmpty();
+  await expect(page.locator('#peks-leakage')).toContainText('No PEKS trapdoor has reached the server yet.');
+
+  // Five disclosures exist on arrival — the intro glossary, the server's
+  // complete store, the challenge's background knowledge, the PEKS construction
+  // boundary and the scope panel's extension seams. The other two (the overlap-as-numbers table and the
   // attack's input matrix) do not EXIST until there are observations, which is
   // precisely why the old gate's `querySelectorAll('details').forEach(d =>
   // d.open = true)` opened a different set depending on when it ran. Asserting
   // the count is what makes "open this disclosure" mean something later.
-  await expect(page.locator('#exhibits details')).toHaveCount(4);
+  await expect(page.locator('#exhibits details')).toHaveCount(5);
   await expect(page.locator('details[open]')).toHaveCount(0);
 
   await settle(page);
@@ -795,8 +807,8 @@ async function search(page: Page, keyword: string): Promise<void> {
  *
  * Six things shape this drive:
  *
- *  - THE ARRIVAL STATE IS SCANNED FIRST. Nine regions on this page are empty
- *    prompts until a query has been observed, and two buttons ship `disabled`.
+ *  - THE ARRIVAL STATE IS SCANNED FIRST. Several regions on this page are empty
+ *    prompts until observations or PEKS tags exist, and dependent controls ship `disabled`.
  *    That is the first thing every reader sees, and the gate this replaces
  *    called `driveMain()` on the line after `goto`, so it never measured it.
  *
@@ -845,7 +857,7 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.());
   await scanAt('first paint, every exhibit an empty prompt');
 
-  await openDetails(page, /six words you need/);
+  await openDetails(page, /seven terms you need/);
   await scanAt('the intro glossary open');
 
   // ── Exhibit 1: the build, stepped ───────────────────────────────────────
@@ -950,7 +962,7 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
 
   await page.locator('#challenge-machine').click();
   await expect(page.getByText('THE PATTERN WAS THE SECRET')).toBeVisible();
-  await expect(page.locator('.score-block')).toHaveCount(3);
+  await expect(page.locator('#challenge-outcome .score-block')).toHaveCount(3);
   await scanAt('the machine scored beside you — three score blocks');
 
   await openDetails(page, /background knowledge/);
@@ -964,6 +976,43 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
   await page.locator('#compare-measure').click();
   await expect(page.getByText(/MS PER SEARCH/)).toBeVisible();
   await scanAt('50 searches timed in this browser');
+
+  // ── Exhibit 7: real public-key searchable encryption and KGA ────────────
+  await openDetails(page, /Construction, correctness equation/);
+  await scanAt('the PEKS construction and proof boundary open');
+
+  await page.locator('#peks-build').click();
+  await expect(page.locator('#peks-build-status')).toContainText('PUBLIC-KEY TAGS BUILT');
+  await expect(page.locator('#peks-server-table tbody tr').first()).toBeVisible();
+  await scanAt('PEKS public sender built randomized tags');
+
+  await page.locator('#peks-query').click();
+  await expect(page.locator('#peks-query-result')).toContainText('ANSWERED — AND OBSERVED');
+  await expect(page.locator('#peks-test-table tbody tr').first()).toBeVisible();
+  await scanAt('PEKS recipient trapdoor searched every tag');
+
+  await page.locator('#peks-repeat').click();
+  await expect(page.locator('#peks-repeat-result')).toContainText('REPEAT LINKED BYTE-FOR-BYTE');
+  await expect(page.locator('#peks-ledger tbody tr')).toHaveCount(2);
+  await scanAt('PEKS repeat trapdoor linked in the server ledger');
+
+  await page.locator('#peks-attack').click();
+  await expect(page.locator('#peks-attack-result')).toContainText('KEYWORD RECOVERED');
+  await expect(page.locator('#peks-dictionary-table tbody tr').first()).toBeVisible();
+  await scanAt('PEKS bounded offline dictionary attack recovered the query');
+
+  await page.locator('#peks-dictionary-mode').selectOption('excludes');
+  await page.locator('#peks-dictionary-bound').selectOption('4');
+  await page.locator('#peks-attack').click();
+  await expect(page.locator('#peks-attack-result')).toContainText('NOT RECOVERED WITHIN THIS BOUND');
+  await expect(page.locator('#peks-dictionary-table tbody tr')).toHaveCount(4);
+  await scanAt('PEKS absent target reported only bounded non-recovery');
+
+  await page.locator('#peks-dictionary-bound').selectOption('0');
+  await page.locator('#peks-attack').click();
+  await expect(page.locator('#peks-attack-result')).toContainText('0 of at most 0 guesses');
+  await expect(page.locator('#peks-dictionary-table')).toHaveCount(0);
+  await scanAt('PEKS zero-guess bound reported no security conclusion');
 
   // ── The teardown cascade ────────────────────────────────────────────────
   // Clearing the log re-renders four other exhibits through `onChange`. The

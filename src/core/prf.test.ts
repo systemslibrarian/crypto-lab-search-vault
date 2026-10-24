@@ -123,7 +123,7 @@ describe('byte helpers', () => {
   it('concatenates in order', () => {
     expect(toHex(concat(fromHex('01'), fromHex('0203')))).toBe('010203');
   });
-  it('compares in constant time, including on length mismatch', () => {
+  it('scans equal-length values and rejects a public length mismatch', () => {
     expect(ctEqual(fromHex('0102'), fromHex('0102'))).toBe(true);
     expect(ctEqual(fromHex('0102'), fromHex('0103'))).toBe(false);
     expect(ctEqual(fromHex('0102'), fromHex('010203'))).toBe(false);

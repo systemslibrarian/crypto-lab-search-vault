@@ -11,8 +11,8 @@ import {
 /**
  * WCAG A/AA regression gate.
  *
- * The lab is driven along everything it teaches: the arrival state, where nine
- * regions are empty prompts and two controls ship disabled; the skip link
+ * The lab is driven along everything it teaches: the arrival state, where
+ * result regions are prompts and dependent controls ship disabled; the skip link
  * focused; the intro glossary opened through its summary; the index build
  * STEPPED, so the pending value rows and the accent-tinted row landing in the
  * server's store are both measured, then completed to the INDEXED verdict, then
@@ -24,8 +24,9 @@ import {
  * beside "recovered" ones; the challenge board guessed, checked, machine-scored
  * and cleared; 50 real searches timed; and finally the teardown cascade, where
  * clearing the server's log re-renders four other exhibits back to their
- * prompts. Every one of those states is scanned, in both themes, at desktop and
- * phone width.
+ * prompts; plus the PEKS arrival, build, query, repeat, recovered-keyword,
+ * bounded-miss, and zero-guess states. Every state is scanned in the supported
+ * dark theme at desktop and phone width.
  *
  * See `gate.ts` for why nothing is injected into the page, why no `<details>` is
  * opened from script, why the theme is seeded rather than toggled, why the lab's

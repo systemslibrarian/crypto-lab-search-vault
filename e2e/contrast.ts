@@ -681,7 +681,7 @@ export async function auditContrast(page: Page, within = 'body *'): Promise<Cont
      * It is not a no-op here: `styles.css` sets `background-color: #0a1413` on
      * `html` ITSELF (and `#f2f8f7` under `[data-theme='light']`), so the root's
      * own paint is opaque and this is the branch that supplies it. The page runs
-     * eight exhibits and many screens deep once the drive has populated them, so
+     * nine exhibits and many screens deep once the drive has populated them, so
      * the alternative — falling through to WHITE for everything the geometry
      * walk finds no ancestor behind — would fabricate failures across most of a
      * near-black page.

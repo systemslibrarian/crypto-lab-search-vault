@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Searchable symmetric encryption in the browser — encrypted keyword search and the leakage-abuse attacks the access pattern enables.",
+  "description": "Searchable symmetric and public-key encryption in the browser — real encrypted search, leakage-abuse attacks, and a PEKS trapdoor dictionary attack.",
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
@@ -21,5 +21,8 @@
     "typescript": "^5.7.3",
     "vite": "^8.3.4",
     "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "@noble/curves": "^2.4.0"
   }
 }

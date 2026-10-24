@@ -20,6 +20,7 @@ export function renderScope(): HTMLElement {
       el('li', {}, 'The server’s query log — written by the code path that answers the query, so it records what a real server would genuinely observe.'),
       el('li', {}, 'The query-integrity exercise builds client-retained checkpoints from the encrypted snapshot that was actually produced: snapshot id, expected answer count and a SHA-256 digest over the complete ordered encrypted answer. Its dishonest-server cases alter only copied replies; the normal SearchServer remains honest-but-curious.'),
       el('li', {}, 'The count attack and the IKK simulated-annealing attack, run against that log with no access to keys or plaintext.'),
+      el('li', {}, 'The PEKS extension runs the Type-3 BLS12-381 pairing equation with RFC 9380 hash-to-curve, randomized public-key tags, recipient trapdoors, full server Test scans, and a bounded offline keyword-guessing attack.'),
       el('li', {}, 'Keys are generated per session with crypto.getRandomValues and held in memory only. Nothing is persisted; nothing leaves the browser.'),
     ),
 
@@ -31,6 +32,7 @@ export function renderScope(): HTMLElement {
       el('li', {}, 'The client and the server are two objects in one page. There is no network, so nothing here measures network-level leakage — and a real deployment leaks timing and message sizes too.'),
       el('li', {}, 'Exact-statistics mode is a favorable attacker control derived from the target. Its slider adds synthetic jitter, not realistic error. Other modes use independently sampled modeled corpora; they are educational sensitivity experiments.'),
       el('li', {}, 'The completeness checkpoint deliberately keeps per-query client metadata for one static snapshot. That is enough to expose the difference between authentic records and a complete, fresh answer, but it is not a scalable or general verifiable-search protocol.'),
+      el('li', {}, 'The PEKS recipient, public sender, server, and attacker are separate objects co-located in one browser tab. Their inputs are separated in code, but no production network or process isolation is modeled.'),
     ),
 
     el('h3', { text: 'What this does NOT prove' }),
@@ -42,6 +44,8 @@ export function renderScope(): HTMLElement {
       el('li', {}, 'It proves nothing about the security of AES-GCM or HMAC-SHA-256. Neither was attacked; both held throughout.'),
       el('li', {}, 'A recovery of 100% at zero background-knowledge error is a property of an exact-statistics adversary, not a claim about the real world.'),
       el('li', {}, 'The checkpoint exercise does not prove this SSE construction is verifiable in production. It assumes the client already retained a trusted current snapshot reference and the exact expected encrypted answer commitment.'),
+      el('li', {}, 'PEKS pairing correctness does not prove the Type-3 adaptation inherits the original symmetric-pairing BDH reduction. No formal reduction, chosen-ciphertext security, trapdoor privacy, sender authentication, or distribution hiding is claimed.'),
+      el('li', {}, 'Failure of a bounded PEKS dictionary does not prove a trapdoor is safe. It means only that no candidate tested within that declared bound passed public Test.'),
     ),
 
     el('h3', { text: 'Deliberately out of scope' }),
@@ -52,6 +56,7 @@ export function renderScope(): HTMLElement {
       el('li', {}, el('strong', { text: 'Multi-keyword boolean queries. ' }), 'Single-keyword lookup only. Conjunctive search (OXT, Cash–Jarecki–Jutla–Krawczyk–Roşu–Steiner 2013) has its own richer leakage profile.'),
       el('li', {}, el('strong', { text: 'CryptDB-style encrypted SQL. ' }), 'No query rewriting, no order-preserving or deterministic column encryption — a different design with a different, larger leakage surface.'),
       el('li', {}, el('strong', { text: 'Volume-hiding SSE. ' }), 'Nothing here pads result sets to a common size, so result size leaks exactly. Padding is the standard countermeasure to the count attack, and it costs storage and bandwidth.'),
+      el('li', {}, el('strong', { text: 'Advanced PEKS variants. ' }), 'No designated-tester, authenticated-sender, conjunctive, fuzzy, dynamic, or multi-user PEKS construction is implemented.'),
     ),
 
     el(

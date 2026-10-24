@@ -47,8 +47,12 @@ export function frame(...parts: Uint8Array[]): Uint8Array {
   return concat(...parts.flatMap((p) => [u32be(p.length), p]));
 }
 
-/** Comparison whose running time does not depend on where the first
- *  difference is. Used wherever a mismatch would otherwise be a timing oracle. */
+/**
+ * Full scan for equal-length inputs, so it does not deliberately exit at the
+ * first differing byte. Length is checked immediately because it is public at
+ * these call sites. JavaScript runtimes provide no hard constant-time or
+ * side-channel guarantee; this helper must not be described as one.
+ */
 export function ctEqual(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
