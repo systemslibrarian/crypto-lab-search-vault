@@ -496,7 +496,7 @@ test('exhibit 5: the score counts exactly the rows it marked, and a wrong guess 
   await page.locator('#challenge-machine').click();
   await expect(page.locator('#challenge-outcome')).toContainText('THE PATTERN WAS THE SECRET');
   const blocks = await page
-    .locator('.score-block')
+    .locator('#challenge-outcome .score-block')
     .evaluateAll((ns) =>
       ns.map((n) => [
         n.querySelector('.score-label')!.textContent!.trim(),

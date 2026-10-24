@@ -962,7 +962,7 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
 
   await page.locator('#challenge-machine').click();
   await expect(page.getByText('THE PATTERN WAS THE SECRET')).toBeVisible();
-  await expect(page.locator('.score-block')).toHaveCount(3);
+  await expect(page.locator('#challenge-outcome .score-block')).toHaveCount(3);
   await scanAt('the machine scored beside you — three score blocks');
 
   await openDetails(page, /background knowledge/);
