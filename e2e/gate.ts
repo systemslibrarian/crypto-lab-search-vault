@@ -43,7 +43,7 @@ export const NARROW = { width: 380, height: 800 };
  *     built was overwritten by the next click before anything measured it. The
  *     arrival state, where result regions are still prompts and several
  *     controls ship disabled, was never scanned at all: `driveMain` is called
- *     immediately after `goto`. This gate scans after every one of 34 steps in
+ *     immediately after `goto`. This gate scans after every one of 38 steps in
  *     the supported dark theme at both 1280px and 380px.
  *
  *  4. `violations` IS NOT THE WHOLE ORACLE, and the companion spec that was
@@ -233,7 +233,7 @@ export async function boot(page: Page, theme: 'dark' | 'light'): Promise<void> {
 
   // `main()` is async — it awaits `initState()`, which does real WebCrypto — so
   // a navigation that resolves proves nothing at all about what is on screen.
-  await expect(page.locator('#exhibits > section.panel')).toHaveCount(9);
+  await expect(page.locator('#exhibits > section.panel')).toHaveCount(10);
   await expect(page.locator('#app .cl-hero-title')).toHaveText('Search Vault');
 
   // ── Exhibit 1 defaults ───────────────────────────────────────────────────
@@ -268,7 +268,16 @@ export async function boot(page: Page, theme: 'dark' | 'light'): Promise<void> {
   // ── Exhibit 6: nothing measured yet ──────────────────────────────────────
   await expect(page.locator('#compare-measurement')).toBeEmpty();
 
-  // ── Exhibit 7: pairing code is lazy and no recipient key exists yet ──────
+  // ── Exhibit 7: executable conjunction starts with no transcript ─────────
+  await expect(page.locator('#oxt-query')).toHaveValue('breach AND audit');
+  await expect(page.locator('#oxt-run')).toBeEnabled();
+  await expect(page.locator('#oxt-controls')).toBeEnabled();
+  await expect(page.locator('#oxt-status')).toContainText('No conjunction executed yet.');
+  await expect(page.locator('#oxt-control-result')).toContainText(
+    'No controlled trace pair has run yet.',
+  );
+
+  // ── Exhibit 8: pairing code is lazy and no recipient key exists yet ──────
   await expect(page.locator('#peks-build-status')).toContainText('NOT BUILT YET');
   await expect(page.locator('#peks-query')).toBeDisabled();
   await expect(page.locator('#peks-repeat')).toBeDisabled();
@@ -857,7 +866,7 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.());
   await scanAt('first paint, every exhibit an empty prompt');
 
-  await openDetails(page, /seven terms you need/);
+  await openDetails(page, /eight terms you need/);
   await scanAt('the intro glossary open');
 
   // ── Exhibit 1: the build, stepped ───────────────────────────────────────
@@ -977,7 +986,37 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
   await expect(page.getByText(/MS PER SEARCH/)).toBeVisible();
   await scanAt('50 searches timed in this browser');
 
-  // ── Exhibit 7: real public-key searchable encryption and KGA ────────────
+  // ── Exhibit 7: bounded OXT conjunction and leakage controls ─────────────
+  await page.locator('#oxt-run').click();
+  await expect(page.locator('#oxt-status')).toContainText(
+    'SAME PLAINTEXT ANSWER, DIFFERENT TRANSCRIPT',
+  );
+  await expect(page.locator('#oxt-status table.data tbody tr')).toHaveCount(4);
+  await scanAt('OXT and two-token SSE returned the same conjunction');
+
+  await page.locator('#oxt-query').fill('audit AND breach');
+  await expect(page.locator('#oxt-status')).toContainText('Input changed; run the displayed conjunction');
+  await page.locator('#oxt-run').click();
+  await expect(page.locator('#oxt-status')).toContainText(
+    'SAME PLAINTEXT ANSWER, DIFFERENT TRANSCRIPT',
+  );
+  await expect(
+    page.locator('#oxt-status .value-row:has(.value-label:text-is("repeated stag")) .value-bytes'),
+  ).toHaveText('yes');
+  await scanAt('reversed OXT operands produced the same selected terms and bytes');
+
+  await page.locator('#oxt-query').fill('audit OR breach');
+  await expect(page.locator('#oxt-status table')).toHaveCount(0);
+  await page.locator('#oxt-run').click();
+  await expect(page.locator('#oxt-status')).toContainText('QUERY REJECTED BEFORE TRANSMISSION');
+  await scanAt('invalid Boolean grammar rejected with stale evidence cleared');
+
+  await page.locator('#oxt-controls').click();
+  await expect(page.locator('#oxt-control-result table tbody tr')).toHaveCount(5);
+  await expect(page.locator('#oxt-control-result')).toContainText('ZERO REPEATS IS AMBIGUOUS');
+  await scanAt('five controlled OXT equality and intersection traces');
+
+  // ── Exhibit 8: real public-key searchable encryption and KGA ────────────
   await openDetails(page, /Construction, correctness equation/);
   await scanAt('the PEKS construction and proof boundary open');
 

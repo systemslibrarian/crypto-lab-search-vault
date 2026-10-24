@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Searchable symmetric and public-key encryption in the browser — real encrypted search, leakage-abuse attacks, and a PEKS trapdoor dictionary attack.",
+  "description": "Executable searchable encryption in the browser — single-keyword SSE leakage, bounded OXT conjunctions, and a PEKS trapdoor dictionary attack.",
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
