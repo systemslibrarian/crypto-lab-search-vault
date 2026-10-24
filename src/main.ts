@@ -5,6 +5,7 @@ import { renderChallenge } from './ui/challenge';
 import { renderCompare } from './ui/compare';
 import { renderIntro } from './ui/intro';
 import { renderLeakage } from './ui/leakage-view';
+import { renderPeks } from './ui/peks';
 import { renderScope } from './ui/scope';
 import { renderSearch } from './ui/search';
 import { initState } from './ui/state';
@@ -25,6 +26,7 @@ async function main(): Promise<void> {
     renderAttack(),
     renderChallenge(),
     renderCompare(),
+    renderPeks(),
     renderScope(),
   );
 }

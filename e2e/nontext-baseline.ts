@@ -17,8 +17,8 @@ export const NONTEXT_BASELINE: Record<
   string,
   { ratio: number; required: number; unverified: boolean }
 > = {
-  // What the live oracle finds, over {dark, light} x {1280, 380} and every one
-  // of the 27 states the drive builds, is exactly these two — both in the SHARED
+  // What the live oracle finds, over dark x {1280, 380} and every one
+  // of the 34 states the drive builds, is exactly these two — both in the SHARED
   // Crypto Lab top bar, and neither one this repo's to fix.
   //
   // `.cl-btn` draws its edge as
@@ -35,7 +35,7 @@ export const NONTEXT_BASELINE: Record<
   // and never an overwrite driven from one repo. So it is measured here,
   // ratcheted here, and reported upward.
   //
-  // Everything inside `#app` — the hero, all eight exhibit panels and the
+  // Everything inside `#app` — the hero, all nine exhibit panels and the
   // footer — is audited with no exemption, and after this pass comes back clean.
   'control-boundary|a.cl-btn': { ratio: 2.09, required: 3, unverified: false },
 };

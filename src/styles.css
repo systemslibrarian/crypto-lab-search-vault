@@ -643,6 +643,41 @@ table.matrix td {
   font-weight: 700;
 }
 
+/* ---- PEKS role separation ---- */
+.peks-roles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 0.9rem;
+}
+.peks-roles .role-card {
+  min-width: 0;
+}
+.peks-roles .scroll-region {
+  max-height: 17rem;
+}
+.leakage-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+.leakage-cards .score-block {
+  min-width: 0;
+}
+@media (max-width: 900px) {
+  .peks-roles {
+    grid-template-columns: 1fr;
+  }
+  .leakage-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .leakage-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---- Comparison ---- */
 .compare-real {
   color: var(--ok-text);
