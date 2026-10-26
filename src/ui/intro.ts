@@ -39,6 +39,10 @@ export function renderIntro(): HTMLElement {
       'Gram-based fuzzy search',
       'A typo-tolerant route that sends keyed tags for many order-preserving subsequences of one word. It can recover nearby indexed words, but the larger deterministic bundle exposes similarity and can produce candidates the client must filter.',
     ],
+    [
+      'Multi-user searchable encryption (MUSE)',
+      'Many writers keep separately keyed indexes and authorize selected readers. A server colluding with a user can turn matching-row equality into labels for other users; a split service changes which party sees each half of that evidence.',
+    ],
   ];
 
   return el(
@@ -71,7 +75,7 @@ export function renderIntro(): HTMLElement {
     el(
       'p',
       {},
-      'Later exhibits compare a naïve two-token AND with bounded OXT, change the roles with public-key encryption with keyword search, and then place exact SSE beside a gram-based fuzzy construction. The fuzzy route recovers an edit-distance neighbor, measures the extra storage and query work, and shows how overlap among opaque query bundles reveals a relation that exact tokens do not.',
+      'Later exhibits compare a naïve two-token AND with bounded OXT, change the roles with public-key encryption with keyword search, and place exact SSE beside a gram-based fuzzy construction. The final lesson then separates readers from writers, lets one known query propagate through an iterative-testing transcript, and compares it with a two-server split whose non-collusion boundary is visible.',
     ),
     el(
       'p',
@@ -83,7 +87,7 @@ export function renderIntro(): HTMLElement {
     el(
       'details',
       {},
-      el('summary', { text: 'Glossary — the nine terms you need for the rest of the page' }),
+      el('summary', { text: 'Glossary — the ten terms you need for the rest of the page' }),
       el(
         'dl',
         {},

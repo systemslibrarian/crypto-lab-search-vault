@@ -28,7 +28,9 @@ import {
  * bounded-miss, and zero-guess states; plus the OXT arrival, valid conjunction,
  * reversed operands, rejected grammar, and controlled-trace states; plus fuzzy
  * threshold-one recovery, threshold-two false-positive filtering, threshold-zero
- * control, retired evidence, and pre-transmission rejection. Every state is
+ * control, retired evidence, and pre-transmission rejection; plus the MUSE
+ * role refusals, keyword-access-pattern propagation, split-trust transcript,
+ * and explicit QM/DH collusion boundary. Every state is
  * scanned in the supported dark theme at desktop and phone width.
  *
  * See `gate.ts` for why nothing is injected into the page, why no `<details>` is
