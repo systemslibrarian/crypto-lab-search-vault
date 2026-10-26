@@ -28,7 +28,7 @@ jobs:
       - run: npm ci
       - name: Unit tests (Vitest, incl. spec KATs)
         run: npm test
-      - name: Fuzzy-search clean-baseline mutation gate
+      - name: Extension clean-baseline mutation gates
         run: npm run test:mutations
       - name: Build (typecheck gates the build)
         run: npm run build

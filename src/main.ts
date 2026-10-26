@@ -7,6 +7,7 @@ import { renderConjunctive } from './ui/conjunctive';
 import { renderFuzzy } from './ui/fuzzy';
 import { renderIntro } from './ui/intro';
 import { renderLeakage } from './ui/leakage-view';
+import { renderMuse } from './ui/muse';
 import { renderPeks } from './ui/peks';
 import { renderScope } from './ui/scope';
 import { renderSearch } from './ui/search';
@@ -37,6 +38,7 @@ async function main(): Promise<void> {
     renderConjunctive(conjunctiveLesson),
     renderPeks(),
     renderFuzzy(fuzzyLesson),
+    renderMuse(),
     renderScope(),
   );
 }

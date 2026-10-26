@@ -43,7 +43,7 @@ export const NARROW = { width: 380, height: 800 };
  *     built was overwritten by the next click before anything measured it. The
  *     arrival state, where result regions are still prompts and several
  *     controls ship disabled, was never scanned at all: `driveMain` is called
- *     immediately after `goto`. This gate scans after every one of 43 steps in
+ *     immediately after `goto`. This gate scans after every one of 44 steps in
  *     the supported dark theme at both 1280px and 380px.
  *
  *  4. `violations` IS NOT THE WHOLE ORACLE, and the companion spec that was
@@ -233,7 +233,7 @@ export async function boot(page: Page, theme: 'dark' | 'light'): Promise<void> {
 
   // `main()` is async — it awaits `initState()`, which does real WebCrypto — so
   // a navigation that resolves proves nothing at all about what is on screen.
-  await expect(page.locator('#exhibits > section.panel')).toHaveCount(11);
+  await expect(page.locator('#exhibits > section.panel')).toHaveCount(12);
   await expect(page.locator('#app .cl-hero-title')).toHaveText('Search Vault');
 
   // ── Exhibit 1 defaults ───────────────────────────────────────────────────
@@ -294,6 +294,11 @@ export async function boot(page: Page, theme: 'dark' | 'light'): Promise<void> {
   await expect(page.locator('#fuzzy-run')).toBeEnabled();
   await expect(page.locator('#fuzzy-status')).toContainText('No fuzzy comparison executed yet.');
   await expect(page.locator('#fuzzy-status table')).toHaveCount(0);
+
+  // ── Exhibit 10: expensive multi-user primitives are lazy ──────────────
+  await expect(page.locator('#muse-run')).toBeEnabled();
+  await expect(page.locator('#muse-status')).toContainText('No session executed yet.');
+  await expect(page.locator('#muse-status table')).toHaveCount(0);
 
   // Five disclosures exist on arrival — the intro glossary, the server's
   // complete store, the challenge's background knowledge, the PEKS construction
@@ -873,7 +878,7 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.());
   await scanAt('first paint, every exhibit an empty prompt');
 
-  await openDetails(page, /nine terms you need/);
+  await openDetails(page, /ten terms you need/);
   await scanAt('the intro glossary open');
 
   // ── Exhibit 1: the build, stepped ───────────────────────────────────────
@@ -1092,6 +1097,19 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
   await expect(page.locator('#fuzzy-status')).toContainText('QUERY REJECTED BEFORE TRANSMISSION');
   await expect(page.locator('#fuzzy-status table')).toHaveCount(0);
   await scanAt('unsupported fuzzy-search text rejected before transmission');
+
+  // ── Exhibit 10: multi-user roles, KWAP attack, and split trust ───────
+  await page.locator('#muse-run').click();
+  await expect(page.locator('#muse-run')).toHaveText('Run another fresh session');
+  await expect(page.locator('#muse-status')).toContainText(
+    'KNOWN LABEL CROSSED THE AUTHORIZATION GRAPH',
+  );
+  await expect(page.locator('#muse-rejection-table tbody tr')).toHaveCount(3);
+  await expect(page.locator('#muse-single-transcript tbody tr')).toHaveCount(3);
+  await expect(page.locator('#muse-qm-message-table tbody tr')).toHaveCount(3);
+  await expect(page.locator('#muse-qm-response-table tbody tr')).toHaveCount(3);
+  await expect(page.locator('#muse-combined-view-table tbody tr')).toHaveCount(3);
+  await scanAt('MUSE role refusals, known-query propagation, and split-trust boundary');
 
   // ── The teardown cascade ────────────────────────────────────────────────
   // Clearing the log re-renders four other exhibits through `onChange`. The
