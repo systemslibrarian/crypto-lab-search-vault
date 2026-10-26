@@ -26,8 +26,10 @@ import {
  * clearing the server's log re-renders four other exhibits back to their
  * prompts; plus the PEKS arrival, build, query, repeat, recovered-keyword,
  * bounded-miss, and zero-guess states; plus the OXT arrival, valid conjunction,
- * reversed operands, rejected grammar, and controlled-trace states. Every state
- * is scanned in the supported dark theme at desktop and phone width.
+ * reversed operands, rejected grammar, and controlled-trace states; plus fuzzy
+ * threshold-one recovery, threshold-two false-positive filtering, threshold-zero
+ * control, retired evidence, and pre-transmission rejection. Every state is
+ * scanned in the supported dark theme at desktop and phone width.
  *
  * See `gate.ts` for why nothing is injected into the page, why no `<details>` is
  * opened from script, why the theme is seeded rather than toggled, why the lab's

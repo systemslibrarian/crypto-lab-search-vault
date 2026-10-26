@@ -15,20 +15,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Executable searchable encryption in the browser: single-keyword SSE leakage attacks, bounded OXT conjunctions, and a Type-3 BLS12-381 PEKS trapdoor dictionary attack."
+      content="Executable searchable encryption in the browser: exact SSE leakage, bounded OXT and PEKS, plus gram-based fuzzy search and similarity leakage."
     />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Search Vault — crypto-lab" />
     <meta
       property="og:description"
-      content="Executable searchable encryption in the browser: single-keyword SSE leakage attacks, bounded OXT conjunctions, and a Type-3 BLS12-381 PEKS trapdoor dictionary attack."
+      content="Executable searchable encryption in the browser: exact SSE leakage, bounded OXT and PEKS, plus gram-based fuzzy search and similarity leakage."
     />
     <meta property="og:url" content="https://systemslibrarian.github.io/crypto-lab-search-vault/" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Search Vault — crypto-lab" />
     <meta
       name="twitter:description"
-      content="Executable searchable encryption in the browser: single-keyword SSE leakage attacks, bounded OXT conjunctions, and a Type-3 BLS12-381 PEKS trapdoor dictionary attack."
+      content="Executable searchable encryption in the browser: exact SSE leakage, bounded OXT and PEKS, plus gram-based fuzzy search and similarity leakage."
     />
     <link
       rel="icon"
@@ -158,18 +158,18 @@
       <header class="cl-hero">
         <div class="cl-hero-main">
           <h1 class="cl-hero-title">Search Vault</h1>
-          <p class="cl-hero-sub">Single-keyword SSE · OXT conjunctions · public-key keyword search</p>
+          <p class="cl-hero-sub">Exact SSE · OXT conjunctions · public-key and fuzzy search</p>
           <p class="cl-hero-desc">
-            Builds and attacks a real encrypted index, compares naïve two-token AND with bounded OXT, then runs
-            pairing-based public-key search and an offline dictionary attack against an exposed trapdoor.
+            Builds and attacks a real encrypted index, compares naïve two-token AND with bounded OXT, runs
+            pairing-based public-key search, then measures gram-based typo recovery and similarity leakage.
           </p>
         </div>
         <aside class="cl-hero-why" aria-label="Why it matters">
           <span class="cl-hero-why-label">WHY IT MATTERS</span>
           <p class="cl-hero-why-text">
-            Encrypted search separates what storage can read from what it can find. Single-keyword SSE, OXT conjunctions,
-            and PEKS expose different equality, volume, access, and guessing surfaces. The role split changes. The need to
-            state and test leakage does not.
+            Encrypted search separates what storage can read from what it can find. Exact SSE, OXT, PEKS, and fuzzy
+            trapdoor bundles expose different equality, volume, access, guessing, and neighborhood surfaces. The role
+            split changes. The need to state and test leakage does not.
           </p>
         </aside>
       </header>

@@ -35,6 +35,10 @@ export function renderIntro(): HTMLElement {
       'Public-key encryption with keyword search (PEKS)',
       'A different role split: anyone can create a searchable tag with a recipient public key, while only that recipient can issue the keyword trapdoor the server tests.',
     ],
+    [
+      'Gram-based fuzzy search',
+      'A typo-tolerant route that sends keyed tags for many order-preserving subsequences of one word. It can recover nearby indexed words, but the larger deterministic bundle exposes similarity and can produce candidates the client must filter.',
+    ],
   ];
 
   return el(
@@ -67,7 +71,7 @@ export function renderIntro(): HTMLElement {
     el(
       'p',
       {},
-      'A later exhibit compares a naïve two-token AND with a bounded OXT construction and measures the equality and intersection evidence its server can retain. The next exhibit changes the roles again with public-key encryption with keyword search: a sender needs only the recipient’s public key to make a searchable tag, while an exposed trapdoor lets the server test low-entropy guesses offline.',
+      'Later exhibits compare a naïve two-token AND with bounded OXT, change the roles with public-key encryption with keyword search, and then place exact SSE beside a gram-based fuzzy construction. The fuzzy route recovers an edit-distance neighbor, measures the extra storage and query work, and shows how overlap among opaque query bundles reveals a relation that exact tokens do not.',
     ),
     el(
       'p',
@@ -79,7 +83,7 @@ export function renderIntro(): HTMLElement {
     el(
       'details',
       {},
-      el('summary', { text: 'Glossary — the eight terms you need for the rest of the page' }),
+      el('summary', { text: 'Glossary — the nine terms you need for the rest of the page' }),
       el(
         'dl',
         {},

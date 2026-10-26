@@ -43,7 +43,7 @@ export const NARROW = { width: 380, height: 800 };
  *     built was overwritten by the next click before anything measured it. The
  *     arrival state, where result regions are still prompts and several
  *     controls ship disabled, was never scanned at all: `driveMain` is called
- *     immediately after `goto`. This gate scans after every one of 38 steps in
+ *     immediately after `goto`. This gate scans after every one of 43 steps in
  *     the supported dark theme at both 1280px and 380px.
  *
  *  4. `violations` IS NOT THE WHOLE ORACLE, and the companion spec that was
@@ -233,7 +233,7 @@ export async function boot(page: Page, theme: 'dark' | 'light'): Promise<void> {
 
   // `main()` is async — it awaits `initState()`, which does real WebCrypto — so
   // a navigation that resolves proves nothing at all about what is on screen.
-  await expect(page.locator('#exhibits > section.panel')).toHaveCount(10);
+  await expect(page.locator('#exhibits > section.panel')).toHaveCount(11);
   await expect(page.locator('#app .cl-hero-title')).toHaveText('Search Vault');
 
   // ── Exhibit 1 defaults ───────────────────────────────────────────────────
@@ -288,6 +288,13 @@ export async function boot(page: Page, theme: 'dark' | 'light'): Promise<void> {
   await expect(page.locator('#peks-query-result')).toBeEmpty();
   await expect(page.locator('#peks-leakage')).toContainText('No PEKS trapdoor has reached the server yet.');
 
+  // ── Exhibit 9: fuzzy comparison starts with declared defaults and no run ─
+  await expect(page.locator('#fuzzy-query')).toHaveValue('asudit');
+  await expect(page.locator('#fuzzy-threshold')).toHaveValue('1');
+  await expect(page.locator('#fuzzy-run')).toBeEnabled();
+  await expect(page.locator('#fuzzy-status')).toContainText('No fuzzy comparison executed yet.');
+  await expect(page.locator('#fuzzy-status table')).toHaveCount(0);
+
   // Five disclosures exist on arrival — the intro glossary, the server's
   // complete store, the challenge's background knowledge, the PEKS construction
   // boundary and the scope panel's extension seams. The other two (the overlap-as-numbers table and the
@@ -323,7 +330,7 @@ export async function expectNoHorizontalOverflow(page: Page, label: string): Pro
     // wide box inside an `overflow: auto` wrapper has a huge bounding rect but
     // is clipped by its scroller and contributes nothing to the document's
     // scroll width — naming it sends you off fixing the wrong element. This page
-    // has a decoy behind every one of its ten `.scroll-region`s.
+    // has a decoy behind every one of its `.scroll-region`s.
     const clipped = (el: Element): boolean => {
       let n = el.parentElement;
       while (n && n !== doc) {
@@ -866,7 +873,7 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.());
   await scanAt('first paint, every exhibit an empty prompt');
 
-  await openDetails(page, /eight terms you need/);
+  await openDetails(page, /nine terms you need/);
   await scanAt('the intro glossary open');
 
   // ── Exhibit 1: the build, stepped ───────────────────────────────────────
@@ -1052,6 +1059,39 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
   await expect(page.locator('#peks-attack-result')).toContainText('0 of at most 0 guesses');
   await expect(page.locator('#peks-dictionary-table')).toHaveCount(0);
   await scanAt('PEKS zero-guess bound reported no security conclusion');
+
+  // ── Exhibit 9: exact SSE versus fuzzy-search candidate listing ──────────
+  await page.locator('#fuzzy-run').click();
+  await expect(page.locator('#fuzzy-status')).toContainText(
+    'NEIGHBORHOOD LINKED FROM OPAQUE TOKENS',
+  );
+  await expect(page.locator('#fuzzy-candidate-table tbody tr')).toHaveCount(1);
+  await scanAt('fuzzy threshold one recovered a typo and exposed one neighborhood link');
+
+  await page.locator('#fuzzy-threshold').selectOption('2');
+  await expect(page.locator('#fuzzy-status')).toContainText('Input changed; run the displayed word');
+  await page.locator('#fuzzy-run').click();
+  await expect(page.locator('#fuzzy-candidate-table tbody tr')).toHaveCount(2);
+  await expect(page.locator('#fuzzy-candidate-table')).toContainText('false positive — filtered');
+  await scanAt('fuzzy threshold two exposed and filtered a candidate false positive');
+
+  await page.locator('#fuzzy-threshold').selectOption('0');
+  await page.locator('#fuzzy-run').click();
+  await expect(page.locator('#fuzzy-status')).toContainText(
+    'NO UNIQUE KNOWN NEIGHBOR IN THIS CONTROL',
+  );
+  await expect(page.locator('#fuzzy-status')).toContainText('NO SERVER CANDIDATES');
+  await scanAt('fuzzy threshold zero retained exact behavior and no inferred neighbor');
+
+  await page.locator('#fuzzy-query').fill('au*dit');
+  await expect(page.locator('#fuzzy-status')).toContainText('Input changed; run the displayed word');
+  await expect(page.locator('#fuzzy-status table')).toHaveCount(0);
+  await scanAt('editing the fuzzy query retired its old evidence');
+
+  await page.locator('#fuzzy-run').click();
+  await expect(page.locator('#fuzzy-status')).toContainText('QUERY REJECTED BEFORE TRANSMISSION');
+  await expect(page.locator('#fuzzy-status table')).toHaveCount(0);
+  await scanAt('unsupported fuzzy-search text rejected before transmission');
 
   // ── The teardown cascade ────────────────────────────────────────────────
   // Clearing the log re-renders four other exhibits through `onChange`. The

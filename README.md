@@ -1,8 +1,8 @@
 # Search Vault
 
-**Single-keyword SSE · OXT conjunctions · public-key keyword search**
+**Single-keyword SSE · OXT conjunctions · public-key keyword search · gram-based fuzzy search**
 
-Executable searchable encryption across three query models: a symmetric encrypted index whose access pattern enables inference attacks, a bounded OXT conjunction whose cross-tokens change the leakage, and public-key searchable tags whose exposed trapdoor enables offline keyword guessing.
+Executable searchable encryption across four query models: a symmetric encrypted index whose access pattern enables inference attacks, a bounded OXT conjunction whose cross-tokens change the leakage, public-key searchable tags whose exposed trapdoor enables offline keyword guessing, and a gram-based fuzzy index whose typo recovery exposes query-neighborhood overlap.
 
 **Live demo:** https://systemslibrarian.github.io/crypto-lab-search-vault/
 
@@ -10,7 +10,7 @@ Executable searchable encryption across three query models: a symmetric encrypte
 
 ## What It Is
 
-An encrypted inverted index, built and searched in your browser, plus published attacks that turn its leakage back into queries. A bounded two-keyword OXT extension compares one structured conjunction with two independent SSE searches. A focused PEKS extension then separates public sender, recipient, and server roles with real BLS12-381 pairings.
+An encrypted inverted index, built and searched in your browser, plus published attacks that turn its leakage back into queries. A bounded two-keyword OXT extension compares one structured conjunction with two independent SSE searches. A focused PEKS extension separates public sender, recipient, and server roles with real BLS12-381 pairings. A final fuzzy-search lesson compares exact SSE with a deletion-gram candidate index, measures its threshold-dependent costs and errors, and makes the added similarity leakage executable.
 
 The scheme is a single-keyword SSE construction in the Song–Wagner–Perrig (2000) / Curtmola–Garay–Kamara–Ostrovsky (SSE-1, 2006) style, with real primitives throughout:
 
@@ -39,15 +39,20 @@ Five independent OXT-only keys feed length-framed HMAC-SHA-256 labels, HMAC-SHA-
 
 Bilinearity proves executable correctness: `e(xH1(w), rP2) = e(H1(w), rX)`. It does **not** prove that the original symmetric-pairing BDH reduction transfers to this Type-3 adaptation. A precisely stated Type-3 hardness assumption and a separate formal reduction would be required; this lab supplies neither and makes no such security claim. The recipient, sender, server, and attacker are separate objects in one browser tab, not production network or process isolation.
 
+**The fuzzy-search extension.** Exhibit 9 is a bounded adaptation of Li et al., IACR ePrint 2009/593, §§3.4–6 and Algorithm 2. At threshold `d`, every indexed word and query produces the set of relative-order-preserving subsequences obtained by deleting from zero through `d` characters. HMAC-SHA-256 turns each gram into a deterministic 32-byte trapdoor; every keyword–gram association carries an independently randomized AES-256-GCM payload bound to that trapdoor as associated data. The honest-but-curious server performs exact trapdoor lookups and returns encrypted candidate rows. Only the client decrypts candidate keywords, computes unit-cost Levenshtein distance, and requests documents for candidates within the threshold.
+
+The three threshold rows are separately built alternatives, not storage that a deployment should sum. The lesson reports both candidate-keyword false-positive/false-negative rates before filtering and final-document rates after filtering, each against a separately computed plaintext oracle. The default `asudit` query at `d=1` recovers `audit`; at `d=2`, `lawsuit` also collides at the gram layer but its measured distance is 3, so the client filters it before requesting documents. This exact-map adapter is not the paper’s symbol trie, LSH, ranked or semantic search, or a reproduction of the paper’s deployment performance.
+
 **The security model.** The server is *honest but curious*: it follows the protocol and records everything it sees. It cannot invert a token (it holds no key) and cannot read a posting or a document (AES-GCM). What it does see, by design, is the **leakage profile**:
 
 - **search pattern** — tokens are deterministic, so repeat queries are linkable;
 - **volume** — how many documents a token matches;
 - **access pattern** — exactly which documents matched, because it has to hand them over.
+- **fuzzy neighborhood pattern** — deterministic query bundles reveal their size, repeated trapdoors, intersections with prior bundles, matching-row volume, and the final access request.
 
 That third item is the subject of the demo. Exhibit 2 also contains a separate dishonest-server integrity exercise: it alters a copy of the real answer after the normal honest-but-curious server computes it, so learners can compare per-record authenticity with answer completeness and freshness without changing the base server model. Leakage-abuse attacks (Islam–Kuzu–Kantarcioglu, NDSS 2012; Cash–Grubbs–Perry–Ristenpart, CCS 2015) reconstruct queries from the pattern alone, given background statistics about a similar corpus. Both attacks are implemented here and run against the log the page has actually accumulated while you used it.
 
-**Not production crypto — a teaching demo.** The SSE/OXT corpus is deliberately small (24 documents, 14 keywords) and the PEKS store has six synthetic tags, so every exercise finishes while you watch. The indexes are static and every role is co-located in one page. No JavaScript constant-time, process-isolation, multi-owner, collusion, dynamic-update, or active result-soundness/correctness, completeness, or freshness claim is made.
+**Not production crypto — a teaching demo.** The SSE/OXT/fuzzy corpus is deliberately small (24 documents, 14 keywords), fuzzy thresholds are limited to 0–2, and the PEKS store has six synthetic tags, so every exercise finishes while you watch. The indexes are static and every role is co-located in one page. No JavaScript constant-time, process-isolation, multi-owner, collusion, dynamic-update, or active result-soundness/correctness, completeness, or freshness claim is made.
 
 ---
 
@@ -61,6 +66,7 @@ That third item is the subject of the demo. Exhibit 2 also contains a separate d
 6. **SSE, ORAM, FHE** — what each hides and what each costs. The SSE latency column is measured in your browser on this vault; the ORAM and FHE columns are labelled as cited, order-of-magnitude figures, because this page runs neither.
 7. **Two-keyword AND — naïve SSE versus bounded OXT** — execute both routes over the same corpus, inspect the exact tokens, posting sets, stag, cross-tokens, candidate points, match positions, counts and final access request, then run five controlled trace pairs that separate repeated s-term lookup from conditional candidate-point equality. A derived Path ORAM table accounts for fixed-volume protection as encrypted block transfers, not round trips.
 8. **Public-key search — and the trapdoor dictionary attack** — generate a recipient key, build randomized tags using only its public key, issue and repeat a recipient trapdoor, scan every tag with public `Test`, and separate search-pattern, volume, and access leakage from an active bounded dictionary attack. Both a recovered target and an honestly worded bounded miss are executable states.
+9. **Fuzzy search — typo recovery leaks a neighborhood** — run the existing exact SSE route beside three real deletion-gram indexes, vary `d` from 0 through 2, inspect storage/query/response costs and both candidate and final error rates, then compare exact-token equality with server-visible fuzzy-bundle overlap against three explicitly labelled prior queries.
 
 Plus a **scope** panel stating what is real, what is scaled down, what this does not prove, and what is deliberately out of scope.
 
@@ -81,7 +87,7 @@ Plus a **scope** panel stating what is real, what is scaled down, what this does
 - your index changes constantly and you have not chosen a scheme with forward and backward privacy.
 - you are tempted to reach for order-preserving or deterministic encryption to make SQL work. That leaks far more than this does.
 
-The OXT exhibit is a construction-and-leakage lesson, not a production recommendation. It supports only two-term `AND`, reveals the selected s-term lookup and list size, every membership-test position, conditional point equalities, final result volume, and requested document identifiers. The PEKS exhibit is likewise a construction-and-attack lesson. Public-key tag creation can be useful when senders must not share the recipient’s search secret, but basic PEKS adds a full tag scan, exposes deterministic trapdoors, permits offline guessing for low-entropy words, and supplies no sender authentication or tag/body binding.
+The OXT exhibit is a construction-and-leakage lesson, not a production recommendation. It supports only two-term `AND`, reveals the selected s-term lookup and list size, every membership-test position, conditional point equalities, final result volume, and requested document identifiers. The PEKS exhibit is likewise a construction-and-attack lesson. Public-key tag creation can be useful when senders must not share the recipient’s search secret, but basic PEKS adds a full tag scan, exposes deterministic trapdoors, permits offline guessing for low-entropy words, and supplies no sender authentication or tag/body binding. The fuzzy exhibit is useful for studying the accuracy/leakage trade-off of one published gram construction; it is not evidence that all fuzzy encrypted-search designs leak the same trace, and case folding by itself is normalization rather than fuzzy search.
 
 ---
 
@@ -89,7 +95,7 @@ The OXT exhibit is a construction-and-leakage lesson, not a production recommend
 
 https://systemslibrarian.github.io/crypto-lab-search-vault/
 
-You can: step the index build for any of the 14 keywords; search real and non-existent keywords and watch the server's log fill; observe a realistically skewed round; read the three SSE leakage views; run both inference attacks at any level of adversary background-knowledge error; try to deanonymise tokens yourself; time 50 searches; compare a real naïve conjunction with bounded OXT; measure five equality/intersection controls; inspect the fixed-result Path ORAM cost; then build real PEKS tags, repeat a trapdoor, and run successful, absent-target, and zero-guess bounded dictionary cases.
+You can: step the index build for any of the 14 keywords; search real and non-existent keywords and watch the server's log fill; observe a realistically skewed round; read the three SSE leakage views; run both inference attacks at any level of adversary background-knowledge error; try to deanonymise tokens yourself; time 50 searches; compare a real naïve conjunction with bounded OXT; measure five equality/intersection controls; inspect the fixed-result Path ORAM cost; build real PEKS tags, repeat a trapdoor, and run successful, absent-target, and zero-guess bounded dictionary cases; then vary a fuzzy threshold and inspect real candidate, cost, error, and query-neighborhood evidence.
 
 ---
 
@@ -109,6 +115,9 @@ You can: step the index build for any of the 14 keywords; search real and non-ex
 - **A bounded miss proves only a bounded miss.** If no tested candidate passes, the target may be absent or beyond the chosen bound. It does not establish trapdoor privacy or security.
 - **Public writers are not authenticated.** Basic PEKS lets anyone with `X` make a tag, but does not prove a word appears in a separately encrypted body, bind tag to body, or authenticate the sender. `Test` also gives no completeness or freshness guarantee.
 - **A trapdoor remains useful after its query.** A server can retain it and test existing and future tags. Equal-keyword tags are randomized before query, but repeated trapdoors, volume, and matching opaque identifiers remain visible after issuance.
+- **A fuzzy gram hit is not yet a search result.** The `asudit`/`lawsuit` threshold-2 control is a real false-positive candidate from the listing construction. Returning it without client-side Levenshtein filtering would release documents outside the declared fuzzy predicate.
+- **Opaque fuzzy bundles still reveal relations.** HMAC hides a gram’s text from a server without the key, but deterministic equality exposes bundle size, repeated grams, cross-query intersections, matching-row volume, and final document access. The default inference assumes three prior query labels became known out of band; it proves one extra neighborhood link under that assumption, not universal plaintext recovery.
+- **The displayed fuzzy rates are bounded measurements.** Candidate rates cover this fixed 14-keyword vocabulary, and final-document rates cover these 24 documents. They are not estimates for another corpus, and increasing `d` need not preserve their values.
 
 ---
 
@@ -120,9 +129,12 @@ The lasting lesson is the one this demo is built around: for SSE, **the leakage 
 
 For PEKS, public encryption changes who may create searchable data, not whether query artifacts need a threat model. Basic PEKS tags do not encrypt the body, authenticate the sender, hide the post-query access pattern, or protect a low-entropy exposed trapdoor from public guess verification.
 
+For fuzzy encrypted search, typo tolerance introduces a second selection layer: a server-side candidate mechanism followed by a client-side predicate. The two layers can have different error profiles, and the larger deterministic query transcript can expose similarity even when the underlying exact tokens would only expose equality.
+
 ### Primary sources and construction boundary
 
 - Cash, Jarecki, Jutla, Krawczyk, Roşu, and Steiner, [*Highly-Scalable Searchable Symmetric Encryption with Support for Boolean Queries*](https://eprint.iacr.org/2013/169), CRYPTO 2013 — OXT construction, cross-tags, and conjunctive-search leakage basis.
+- Li, Wang, Wang, Cao, Ren, and Lou, [*Enabling Efficient Fuzzy Keyword Search over Encrypted Data in Cloud Computing*](https://eprint.iacr.org/2009/593), ePrint 2009/593 / INFOCOM 2010 — §3.4’s edit-distance definition, §4.2 Algorithm 2’s deletion-gram sets, §5.1’s listing route, and §6’s completeness, false-positive, and fuzzy query-overlap trace. This lab uses an exact-map HMAC/AES-GCM adapter rather than reproducing the paper’s trie or performance evaluation.
 - [RFC 9496](https://www.rfc-editor.org/rfc/rfc9496.html), especially Appendix A — ristretto255 encodings, valid multiples, and invalid-encoding rejection cases pinned by the tests. The RFC does not prove DDH.
 - Stefanov et al., [*Path ORAM: An Extremely Simple Oblivious RAM Protocol*](https://people.csail.mit.edu/devadas/pubs/PathORAMJACM.pdf) — the path, bucket, position-map, and stash model behind the derived transfer table.
 - Cash et al., [*The Fallacy of Composition of Oblivious RAM and Searchable Encryption*](https://eprint.iacr.org/2015/668) — why a separate ORAM store does not erase the search server’s transcript and why non-collusion is an assumption.
@@ -134,7 +146,7 @@ For PEKS, public encryption changes who may create searchable data, not whether 
 - Abdalla et al., [*Searchable Encryption Revisited: Consistency Properties, Relation to Anonymous IBE, and Extensions*](https://www.iacr.org/cryptodb/archive/2005/CRYPTO/927/927.pdf), CRYPTO 2005 — computational consistency and the anonymous-IBE relation.
 - IRTF CFRG, [*Pairing-Friendly Curves* Internet-Draft](https://datatracker.ietf.org/doc/draft-irtf-cfrg-pairing-friendly-curves/) — work-in-progress concrete estimate near 126 bits for BLS12-381. The lab deliberately makes no exact 128-bit claim.
 
-The first paper uses a symmetric pairing. This implementation instead follows the algebra in Type-3 groups because BLS12-381 has no efficient G1↔G2 isomorphism. That engineering adaptation preserves the demonstrated correctness equation; it is not presented as inheriting the paper’s proof.
+The original Boneh et al. PEKS paper uses a symmetric pairing. This implementation instead follows the algebra in Type-3 groups because BLS12-381 has no efficient G1↔G2 isomorphism. That engineering adaptation preserves the demonstrated correctness equation; it is not presented as inheriting the paper’s proof.
 
 ---
 
@@ -145,6 +157,7 @@ npm install
 npm run dev          # http://localhost:5173
 npm test             # unit tests, including the spec KATs
 npm run build        # typecheck + production build
+npm run test:mutations # clean baseline plus 16 fuzzy-search source mutations
 npm run test:a11y    # axe-core WCAG 2.1 AA gate against the production build
 npm run test:e2e     # the same Playwright run, including the functional claims suite
 ```
@@ -165,7 +178,7 @@ Both Playwright scripts build first and start `vite preview` on port **4237** au
 
 ## Build & Verify
 
-**180 unit tests in 15 files**, all passing, run by `npm test` and gating the deploy.
+**209 unit tests in 18 files**, all passing, run by `npm test` and gating the deploy. Exhibit 9 adds 29 tests for the published gram example, bounded exhaustive completeness, cross-checks between distinct rolling-row and full-matrix Levenshtein implementations, index/query/response accounting, candidate filtering, final-document equality and server-bound access requests, retained opaque query bundles, server-visible overlap inference, invalid input, ciphertext binding, and isolated transcripts. A clean-baseline mutation gate then applies 16 concrete source faults one at a time, requires each named owning test to fail, restores exact source bytes, and re-runs the unmodified baseline.
 
 **19 published positive known-answer cases plus all 29 RFC 9496 invalid encodings:**
 
@@ -180,9 +193,9 @@ Both Playwright scripts build first and start `vite preview` on port **4237** au
 
 Beyond the KATs, the suite covers: index construction (one posting per keyword–document pair, distinct pseudorandom addresses, no two identical ciphertexts); search correctness for every keyword in the corpus; the miss path for unindexed keywords and random tokens; six SSE fail-closed cases; what the server's ledger does and does not record; leakage computations and inference attacks; and the query-integrity checkpoint. OXT tests independently pin the `F_X=2`, `F_I=3`, `F_Z=5` cancellation transcript; exercise wide little-endian scalar reduction and forced-zero retry; require 55 unique flat TSet rows and 55 sorted exact XSet elements; verify every one of the 91 keyword pairs in both operand orders against plaintext; reject unsupported grammar before a transcript; check the three required leakage controls plus repeated-s and identical-query cases; authenticate, bind, and corpus-check result identifiers; demonstrate why an authentic s-list row is not an active-server x-membership proof; and derive all four Path ORAM padding cases. PEKS tests pin an independently derived fixed `x=7, r=11` transcript; verify the two pairing routes and full H2 digest; require randomized equal-keyword tags; reject wrong keywords, foreign recipients, tampered digests, identity, malformed, non-canonical, and non-subgroup point encodings; prove the server record shape contains no keyword, scalar, randomness, body, or demo GT element; and exercise recovered, absent, truncated, zero-bound, normalized-duplicate, and wrong-recipient dictionaries.
 
-**Functional browser gate:** `e2e/claims.spec.ts` drives the production build and asserts each SSE number against other rendered evidence rather than constants. `e2e/query-integrity.spec.ts` separately drives all four integrity cases plus unindexed-keyword refusal. `e2e/oxt.spec.ts` cross-checks rendered query volumes and counts against actual rows and match badges, measures naïve repeat-token flags, compares every full stag/xtoken/candidate byte under reversed operands, requires invalid input to clear evidence, distinguishes parser rejection from crypto execution failure, pins all five controlled traces and all four ORAM rows, and proves an in-flight completion cannot restore stale evidence. `e2e/peks.spec.ts` proves the sender/server record counts agree, repeated-word tag bytes differ in that measured run, every server tag receives `Test`, matched rows equal the verdict and ledger, repeated trapdoors match in all 48 bytes, the attack headline equals its first passing row, bounded misses make no security claim, build failure keeps dependent controls disabled, an in-flight attack cannot restore evidence after its trapdoor is retired, and a rebuild retires all prior-key evidence. Uncaught page or console errors fail the run.
+**Functional browser gate:** `e2e/claims.spec.ts` drives the production build and asserts each SSE number against other rendered evidence rather than constants. `e2e/query-integrity.spec.ts` separately drives all four integrity cases plus unindexed-keyword refusal. `e2e/oxt.spec.ts` cross-checks rendered query volumes and counts against actual rows and match badges, measures naïve repeat-token flags, compares every full stag/xtoken/candidate byte under reversed operands, requires invalid input to clear evidence, distinguishes parser rejection from crypto execution failure, pins all five controlled traces and all four ORAM rows, and proves an in-flight completion cannot restore stale evidence. `e2e/peks.spec.ts` proves the sender/server record counts agree, repeated-word tag bytes differ in that measured run, every server tag receives `Test`, matched rows equal the verdict and ledger, repeated trapdoors match in all 48 bytes, the attack headline equals its first passing row, bounded misses make no security claim, build failure keeps dependent controls disabled, an in-flight attack cannot restore evidence after its trapdoor is retired, and a rebuild retires all prior-key evidence. `e2e/fuzzy.spec.ts` independently recomputes deletion grams, edit distances, threshold candidate sets, storage rows, response hits, and error rates; verifies the threshold-2 false positive is filtered before document access; and exercises zero-threshold, invalid-input, retired-evidence, and in-flight stale-completion controls. Uncaught page or console errors fail the run.
 
-**Accessibility gate:** `@axe-core/playwright` scans the production build for WCAG 2.1 A/AA violations in the supported dark theme at desktop and 380px. The shared drive scans 38 learner states per viewport, including OXT arrival, valid and reversed queries, rejected grammar, controlled traces, and the PEKS arrival/build/query/repeat/attack states. Arithmetic text and control contrast, non-text contrast ratchets, keyboard-reachable scrollers, focus visibility, reduced motion, unique landmarks, and horizontal reflow are separate enforced oracles. Zero new violations are required; a regression blocks deployment.
+**Accessibility gate:** `@axe-core/playwright` scans the production build for WCAG 2.1 A/AA violations in the supported dark theme at desktop and 380px. The shared drive scans 43 learner states per viewport, including OXT arrival, valid and reversed queries, rejected grammar, controlled traces, the PEKS arrival/build/query/repeat/attack states, and five fuzzy-search success/control/error states. Arithmetic text and control contrast, non-text contrast ratchets, keyboard-reachable scrollers, focus visibility, reduced motion, unique landmarks, and horizontal reflow are separate enforced oracles. Zero new violations are required; a regression blocks deployment.
 
 ---
 
@@ -195,6 +208,8 @@ The attacks are comparably cheap: the count attack is a table lookup, and the IK
 The bounded OXT query walks only the selected s-term list and performs one ristretto255 multiplication plus one exact XSet lookup per row. That is a teaching-workload statement, not a deployment benchmark or a claim about the paper’s optimized TSet. The Path ORAM table is derived arithmetic only: 48 encrypted block transfers per logical fetch and 144 after padding to three fetches under the displayed assumptions.
 
 Basic PEKS has a different cost: this exhibit runs one pairing-based `Test` for every stored tag, so query work is proportional to the tag store rather than the number of matches. Each offline guess also constructs a real randomized tag and runs `Test`; the dictionary is deliberately small and the UI yields between guesses. No deployment-scale timing claim is made.
+
+The fuzzy threshold ledger measures the current browser session’s real index associations, bytes, trapdoor count, exact-map lookups, returned rows, response bytes, and bounded error rates. On this vocabulary the three alternative indexes contain 14, 109, and 401 keyword–gram associations for `d=0,1,2`; those counts are test fixtures for this corpus, not an asymptotic or deployment benchmark.
 
 ---
 
