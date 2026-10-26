@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { MuseAccessController, MuseLesson } from './lesson';
 
 describe('L-R-08 end-to-end lesson', () => {
+  // This deliberately executes two complete 64-cell, 128-bit-share Paillier
+  // routes. Hosted Node 22 measured 5.5 s under the full parallel suite, so
+  // retain the real workload and assertions while giving it a bounded 20 s.
   it('executes role refusals, the KWAP attack, and the split-trust comparison', async () => {
     const lesson = await MuseLesson.create();
     const run = await lesson.run();
@@ -31,7 +34,7 @@ describe('L-R-08 end-to-end lesson', () => {
         .map((row) => row.writerId)
         .sort(),
     ).toEqual([...run.splitTrust.first.reader.writerIds].sort());
-  });
+  }, 20_000);
 
   it('keeps writer and reader operations as disjoint runtime capabilities', () => {
     const roles = new MuseAccessController(['reader-a'], ['writer-a']);
