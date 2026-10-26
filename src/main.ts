@@ -4,6 +4,7 @@ import { renderBuild } from './ui/build';
 import { renderChallenge } from './ui/challenge';
 import { renderCompare } from './ui/compare';
 import { renderConjunctive } from './ui/conjunctive';
+import { renderFuzzy } from './ui/fuzzy';
 import { renderIntro } from './ui/intro';
 import { renderLeakage } from './ui/leakage-view';
 import { renderPeks } from './ui/peks';
@@ -11,6 +12,7 @@ import { renderScope } from './ui/scope';
 import { renderSearch } from './ui/search';
 import { initState } from './ui/state';
 import { ConjunctiveLesson } from './oxt/lesson';
+import { FuzzySearchLesson } from './fuzzy/lesson';
 
 async function main(): Promise<void> {
   const mount = document.getElementById('exhibits');
@@ -18,9 +20,10 @@ async function main(): Promise<void> {
 
   // Build the vault before anything renders: every exhibit displays real
   // values from it, so there is no placeholder state to fake.
-  const [, conjunctiveLesson] = await Promise.all([
+  const [, conjunctiveLesson, fuzzyLesson] = await Promise.all([
     initState(),
     ConjunctiveLesson.create(),
+    FuzzySearchLesson.create(),
   ]);
 
   mount.append(
@@ -33,6 +36,7 @@ async function main(): Promise<void> {
     renderCompare(),
     renderConjunctive(conjunctiveLesson),
     renderPeks(),
+    renderFuzzy(fuzzyLesson),
     renderScope(),
   );
 }
