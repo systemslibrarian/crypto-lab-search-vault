@@ -117,7 +117,10 @@ export async function verifyQueryReply(
 /**
  * Produce explicit dishonest-server cases for the learner exercise. The normal
  * SearchServer remains honest-but-curious; only this function alters a copy of
- * its answer so the integrity guarantees can be compared side by side.
+ * its answer so the integrity guarantees can be compared side by side. The
+ * fabricate case replaces one authentic posting with a row the server made up
+ * (a fresh address and fresh bytes of the authentic shape), which is a
+ * different case from tampering with a real posting's bytes.
  */
 export function makeIntegrityTrialReply(
   postings: Array<{ address: Uint8Array; value: Uint8Array }>,
@@ -132,8 +135,13 @@ export function makeIntegrityTrialReply(
   if (mode === 'omit' && copied.length > 0) {
     copied.pop();
   } else if (mode === 'fabricate' && copied.length > 0) {
-    const forged = copied[0]!;
-    forged.value[forged.value.length - 1] ^= 0x01;
+    // The server holds no key, so a row it invents cannot authenticate; the
+    // case exists to show the full-answer checkpoint rejects it as well.
+    const template = copied[0]!;
+    copied[0] = {
+      address: crypto.getRandomValues(new Uint8Array(template.address.length)),
+      value: crypto.getRandomValues(new Uint8Array(template.value.length)),
+    };
   }
 
   return {

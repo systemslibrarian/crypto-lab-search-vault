@@ -69,7 +69,7 @@ export function renderSearch(): HTMLElement {
     { id: 'integrity-mode' },
     el('option', { value: 'honest', text: 'Honest current answer' }),
     el('option', { value: 'omit', text: 'Omit one authentic posting' }),
-    el('option', { value: 'fabricate', text: 'Fabricate one posting' }),
+    el('option', { value: 'fabricate', text: 'Fabricate one posting (a server-invented row)' }),
     el('option', { value: 'stale', text: 'Replay an older snapshot' }),
   ) as HTMLSelectElement;
   const integrityBtn = el(
@@ -368,7 +368,7 @@ export function renderSearch(): HTMLElement {
           '✗',
           'FABRICATED ANSWER REJECTED',
           individualAuthentication === 'failed'
-            ? 'The forged posting failed AES-GCM authentication, and the full-answer checkpoint also disagreed. This is the easy integrity case: both protections detect it.'
+            ? 'The server-invented posting failed AES-GCM authentication, and the full-answer checkpoint also disagreed. This is the easy integrity case: a row the server made up has no key behind it, and both protections detect it.'
             : 'The full-answer checkpoint disagreed with the same-size reply. The client rejected the answer.',
         ),
       );
