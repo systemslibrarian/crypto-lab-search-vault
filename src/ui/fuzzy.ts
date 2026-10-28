@@ -308,7 +308,7 @@ function renderThresholdTable(run: FuzzyLessonRun): HTMLElement {
     el('h3', { id: 'h-fuzzy-threshold-ledger', text: 'Threshold ledger — real alternative indexes and this query' }),
     el('p', {
       class: 'note',
-      text: 'Each row is a separately built alternative index; do not add their storage. Candidate rates classify unique decrypted candidate keywords against a plaintext Levenshtein oracle over all 14 indexed keywords. Final-document rates measure the answer after client filtering against all 24 corpus documents. “n/a” means the rate denominator is zero.',
+      text: 'Each row is a separately built alternative index; do not add their storage. Candidate rates classify unique decrypted candidate keywords against a plaintext Levenshtein oracle over all 14 indexed keywords. The two final-document columns are an oracle consistency check, not a measured error rate: the lesson compares the answer after client filtering with the plaintext oracle over all 24 corpus documents and refuses to render a run that disagrees, so they can only ever read 0 over their denominator and show that the check ran. “n/a” means the denominator is zero.',
     }),
     scrollRegion(
       'Fuzzy threshold storage, query cost, and error rates',
@@ -329,8 +329,8 @@ function renderThresholdTable(run: FuzzyLessonRun): HTMLElement {
             el('th', { scope: 'col', text: 'Candidate TP' }),
             el('th', { scope: 'col', text: 'Candidate FP rate' }),
             el('th', { scope: 'col', text: 'Candidate FN rate' }),
-            el('th', { scope: 'col', text: 'Final doc FP rate' }),
-            el('th', { scope: 'col', text: 'Final doc FN rate' }),
+            el('th', { scope: 'col', text: 'Final doc FP (oracle check)' }),
+            el('th', { scope: 'col', text: 'Final doc FN (oracle check)' }),
           ),
         ),
         el(

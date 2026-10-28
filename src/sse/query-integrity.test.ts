@@ -64,10 +64,19 @@ describe('query-result completeness and freshness checkpoint', () => {
     });
   });
 
-  it('detects a same-size fabricated answer and AES-GCM independently rejects the forged posting', async () => {
+  it('detects a same-size answer carrying a server-invented posting, which AES-GCM independently rejects', async () => {
     const { reply, verification } = await caseFor('breach', 'fabricate');
     expect(verification).toMatchObject({ ok: false, reason: 'digest-mismatch' });
     await expect(openPostings(keys, 'breach', reply.postings)).rejects.toBeTruthy();
+    // Invented, not tampered: the row shares neither its address nor its bytes
+    // with any authentic posting, so this case is distinct from a bit flip.
+    const honest = await server.search(await searchToken(keys, 'breach'));
+    const addresses = new Set(honest.map((p) => toHex(p.address)));
+    const values = new Set(honest.map((p) => toHex(p.value)));
+    const invented = reply.postings[0]!;
+    expect(reply.postings.length).toBe(honest.length);
+    expect(addresses.has(toHex(invented.address))).toBe(false);
+    expect(values.has(toHex(invented.value))).toBe(false);
   });
 
   it('rejects a cryptographically authentic answer labelled as an older snapshot', async () => {
