@@ -20,6 +20,7 @@ import { DOMAIN, prf } from '../core/prf';
 import { CORPUS, documentsFor } from './corpus';
 import type { BuildStep, Document, EncryptedVault, IndexRow, VaultKeys } from './types';
 
+import { cryptoUint32Source, randomBelow, type Uint32Source } from './uniform';
 /** Fresh 256-bit keys, in memory only. Nothing here is ever written to
  *  localStorage, cookies, or the network — reload and the vault is gone. */
 export function generateKeys(): VaultKeys {
@@ -121,10 +122,17 @@ export function normalize(keyword: string): string {
   return keyword.trim().toLowerCase();
 }
 
-function shuffle<T>(items: T[]): T[] {
+/**
+ * Fisher-Yates over a uniform index. The index used to be
+ * `crypto.getRandomValues(new Uint32Array(1))[0]! % (i + 1)`, whose modulo makes the low
+ * residues likelier for every bound that does not divide 2^32 -- which is every bound
+ * here except the powers of two. `randomBelow` rejects that tail instead. The source is
+ * injected so a test can script the draws; see uniform.test.ts.
+ */
+export function shuffle<T>(items: T[], source: Uint32Source = cryptoUint32Source): T[] {
   const out = items.slice();
   for (let i = out.length - 1; i > 0; i--) {
-    const j = crypto.getRandomValues(new Uint32Array(1))[0]! % (i + 1);
+    const j = randomBelow(i + 1, source);
     [out[i], out[j]] = [out[j]!, out[i]!];
   }
   return out;
