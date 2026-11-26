@@ -165,7 +165,7 @@ test('exhibit 2: the verdict, the client results, the access pattern and the led
     .split(',')
     .map((s) => s.trim());
   expect(claimedIds).toHaveLength(claimed);
-  expect(verdict).toContain('without learning "breach"');
+  expect(verdict).toContain('without receiving "breach" in plaintext');
 
   // What the client decrypted.
   const decrypted = await ex

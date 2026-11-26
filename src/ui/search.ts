@@ -6,7 +6,7 @@
  * so the right column cannot flatter the scheme.
  */
 import { toHex } from '../core/bytes';
-import { addressFor, openDocument, searchToken } from '../sse/client';
+import { addressFor, openDocument } from '../sse/client';
 import { KEYWORDS } from '../sse/corpus';
 import { tokenLabel } from '../sse/leakage';
 import { badge, clear, el, labelled, panel, scrollRegion, shortHex, verdict } from './dom';
@@ -108,17 +108,30 @@ export function renderSearch(): HTMLElement {
     el(
       'p',
       { class: 'honesty' },
-      'Real, not simulated: the server object genuinely cannot compute the keyword from the token — it holds no key. ' +
-        'Its ledger is written by the same function that answers the query, so it records exactly what a real ' +
-        'honest-but-curious server would hold, and nothing more.',
+      'Real, not simulated: the server holds no client key and receives an opaque token. Observations across queries can still reveal the keyword. ' +
+        'Its ledger is written by the same function that answers the query, so it records the query observations that this model gives an ' +
+        'honest-but-curious server.',
     ),
   );
 
-  async function doSearch(raw: string): Promise<void> {
-    const keyword = raw.trim().toLowerCase();
+  let searchVersion = 0;
+  let integrityVersion = 0;
+
+  function clearSearchResult(): void {
     clear(clientSide);
     clear(serverSide);
     clear(outcome);
+  }
+
+  function retireIntegrity(): void {
+    integrityVersion++;
+    integrityResult.textContent = 'Use “Test the answer” to check the selected keyword and server behavior.';
+  }
+
+  async function doSearch(raw: string): Promise<void> {
+    const version = ++searchVersion;
+    const keyword = raw.trim().toLowerCase();
+    clearSearchResult();
     if (!keyword) {
       outcome.append(
         verdict('info', 'ℹ', 'NOTHING TO SEARCH', 'Type a keyword — try one of the suggestions, or a word that is not in the corpus.'),
@@ -126,20 +139,18 @@ export function renderSearch(): HTMLElement {
       return;
     }
 
-    const { keys, server } = getState();
-    const token = await searchToken(keys, keyword);
+    const { keys } = getState();
+    const { token, ids, documents } = await runSearch(keyword);
     const probes: string[] = [];
-    // Show the address walk the server performs: addr_0, addr_1, … until miss.
-    const postings = await server.search(token);
-    for (let i = 0; i <= postings.length; i++) probes.push(toHex(await addressFor(token, i)));
+    for (let i = 0; i <= ids.length; i++) probes.push(toHex(await addressFor(token, i)));
 
-    const { ids, documents } = await runSearch(keyword);
     // Decrypt only what the server actually handed back — the client never
     // reads a body it did not receive as a search result.
     const docs = await Promise.all(
       documents.map(async (d) => ({ id: d.id, ...(await openDocument(keys, d.id, d.blob)) })),
     );
 
+    if (version !== searchVersion) return;
     clientSide.append(
       el(
         'p',
@@ -240,7 +251,7 @@ export function renderSearch(): HTMLElement {
           'warn',
           '👁',
           'ANSWERED — AND OBSERVED',
-          `The server returned the right ${ids.length} documents without learning "${keyword}". It now also knows that some keyword matches exactly {${ids.join(', ')}} — and it will recognise this token again.`,
+          `The server returned the right ${ids.length} documents without receiving "${keyword}" in plaintext. It now also knows that some keyword matches exactly {${ids.join(', ')}} — and it will recognise this token again.`,
         ),
       );
     } else {
@@ -249,7 +260,7 @@ export function renderSearch(): HTMLElement {
           'info',
           'ℹ',
           'NO MATCH',
-          `No label under this token exists, so the server returned nothing and learned only that some keyword matched zero documents. "${keyword}" is not one of the ${KEYWORDS.length} indexed keywords.`,
+          `The token had no indexed label, so the server returned nothing. It saw this token and a zero result count. It can recognize the same token on a later search. "${keyword}" is not one of the ${KEYWORDS.length} indexed keywords.`,
         ),
       );
     }
@@ -308,6 +319,7 @@ export function renderSearch(): HTMLElement {
 
   integrityBtn.addEventListener('click', () => {
     void (async () => {
+      const version = ++integrityVersion;
       clear(integrityResult);
       const keyword = input.value.trim().toLowerCase();
       if (!KEYWORDS.includes(keyword as (typeof KEYWORDS)[number])) {
@@ -325,6 +337,7 @@ export function renderSearch(): HTMLElement {
       const mode = integrityMode.value as QueryReplyMode;
       const { verification, individualAuthentication, returnedIds } =
         await runIntegrityTrial(keyword, mode);
+      if (version !== integrityVersion) return;
 
       if (verification.ok) {
         integrityResult.append(
@@ -376,13 +389,29 @@ export function renderSearch(): HTMLElement {
   });
 
   searchBtn.addEventListener('click', () => void doSearch(input.value));
+  input.addEventListener('input', () => {
+    searchVersion++;
+    clearSearchResult();
+    retireIntegrity();
+  });
+  integrityMode.addEventListener('change', retireIntegrity);
   input.addEventListener('keydown', (e) => {
     if ((e as KeyboardEvent).key === 'Enter') void doSearch(input.value);
   });
   allBtn.addEventListener('click', () => {
-    void runAllQueries().then(() => doSearch(input.value));
+    const version = ++searchVersion;
+    clearSearchResult();
+    allBtn.disabled = true;
+    void runAllQueries().then(() => {
+      if (version === searchVersion) {
+        outcome.append(verdict('info', 'ℹ', 'BATCH COMPLETE',
+          `Searched each of the ${KEYWORDS.length} indexed keywords once. The server log lists the results.`));
+      }
+    }).finally(() => { allBtn.disabled = false; });
   });
   clearBtn.addEventListener('click', () => {
+    searchVersion++;
+    clearSearchResult();
     resetLedger();
     renderLedger();
   });
